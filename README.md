@@ -1,60 +1,77 @@
-**English** | [简体中文](README.zh-CN.md)
+**简体中文** | [English](README.en.md)
 
-# Picturama (Loy fork)
+# Picturama（Loy 分支）
 
-Digital image organizer powered by the web
+本地照片管理工具，支持按日期和文件夹浏览、图片调色，以及相似照片与重复照片分组清理。
 
-> **Fork notice:** This is a fork of [picturama/picturama](https://github.com/picturama/picturama) —
-> all credit for the original app goes to its authors, Til Schneider and Loïc Nogues. This repository
-> extends the original with additional features and maintains its own releases.
+> 本项目基于 [picturama/picturama](https://github.com/picturama/picturama) 开发，原作者为 Til Schneider 和 Loïc Nogues。本仓库在原版基础上扩展功能，并独立维护发行版本。
 
-## Download
+## 下载
 
-Grab the latest Windows installer from the
-[Releases](https://github.com/LoyWork/Loy_Picturama/releases) page of this repository.
+- [下载最新版本](https://github.com/LoyWork/Loy_Picturama/releases/latest)：目前提供 Windows x64 安装包。
+- [v2.1.1 Windows 安装包](https://github.com/LoyWork/Loy_Picturama/releases/download/v2.1.1/Picturama_2.1.1_x64-setup.exe) · [更新说明](doc/releases/v2.1.1.md)
 
-## Screenshots
+Windows 安装包内置 DINOv2 模型与 CPU 推理组件，安装后扫描无需下载模型，照片和识别过程均留在本机。深度扫描需要 Windows 的 Microsoft Visual C++ x64 运行库。
 
-### Organize and browse your photo library
+## 功能预览
 
-Browse photos in a thumbnail grid grouped by date, navigate folders in the sidebar,
-and quickly access favorites or the trash.
+### 整理与浏览照片库
 
-![Photo library with date-grouped thumbnails, folder navigation, favorites and trash](doc/screenshots/photo-library.png)
+按日期分组浏览缩略图，通过侧栏访问文件夹、标签、收藏和垃圾桶。
 
-### View and adjust your photos
+![照片库：按日期分组的缩略图、文件夹导航、收藏与垃圾桶](doc/screenshots/photo-library.png)
 
-View photos at full size and fine-tune exposure, contrast, highlights, shadows,
-white balance, vibrance and saturation with a live RGB histogram. The adjustment
-panel also includes Color Mixer, Color Grading and Effects sections.
+### 查看与调整照片
 
-![Photo detail view with RGB histogram and light and color adjustment controls](doc/screenshots/photo-adjustments.png)
+结合实时 RGB 直方图调整曝光、对比度、高光、阴影、白平衡、自然饱和度和饱和度，并使用颜色混合器（Color Mixer）、色彩分级（Color Grading）和效果（Effects）控件。
 
-## Features
+![照片详情：大图预览、RGB 直方图与光线和色彩调整面板](doc/screenshots/photo-adjustments.png)
 
-Everything from the original Picturama:
+### 相似照片与重复照片清理
 
-- Scan local files - Keep your privacy, don't upload your personal photos to a cloud service
-- Non-Destructive - The original images won't be touched (unless you purge the trash)
-- Read various photo formats: JPG, PNG, WebP, HEIC / HEIF, TIF (macOS only)
-- Read camera RAW through the vendored LightCraft engine: NEF/NRW, CR2/CR3, ARW, RAF, DNG, RW2, PEF, ORF and SRW, with embedded-preview fallback for unsupported variants. [Coverage and limitations](doc/raw-support.md).
-- Browse photos by dates
-- View photo in detail (zoomable)
-- View EXIF information
-- Tags
-- Favorites
-- Rotate photos
-- Delete photos
+侧栏中的两个清理入口均在主窗口按组展示扫描结果，可以放大预览，逐张标记删除，或选择「只保留这张」。每组至少保留一张，扫描后默认全部保留。
 
-Plus what this fork adds:
+| 清理方式 | 适合的照片 | 匹配方法 |
+| --- | --- | --- |
+| 相似照片 · 快速扫描 | 同一照片缩放、压缩、亮度变化等近似副本 | 感知哈希及画面比例、色彩检查 |
+| 相似照片 · 深度扫描 | 同场景、人物姿势或构图有所变化的照片 | DINOv2 视觉特征，同时检索近似副本 |
+| 重复照片清理 | 文件名或路径不同，但文件内容完全一致的照片 | 文件大小预筛选 + SHA-256 |
 
-- Photo adjustments - Fine-tune light and color with an RGB histogram, plus Color Mixer,
-  Color Grading and Effects controls
-- Folder sidebar - Browse the top-level folders of your photo directories and filter the library by folder
-- Unified filter sidebar - Photo views (all / favorites / trash), tags and folders in one place
-- Photo context menu - Copy image to clipboard, delete from library, delete from disk (moves to the
-  system trash) and open the containing folder, right from a photo
+深度扫描默认开启，可选择严格、标准或宽松的匹配范围。相似分组可能包含外观相近的其他场景，请在删除前逐张确认；当前深度推理使用 CPU，支持 Windows x64。
 
-## Develop
+使用步骤：
 
-See [DEVELOP.md](DEVELOP.md) for details about how to build Picturama.
+1. 在侧栏选择「相似照片清理」或其下方的「重复照片清理」。
+2. 点击「扫描照片」，在主窗口逐组对比并选择保留和待删除的照片。
+3. 确认后移入应用垃圾桶；需要时可在垃圾桶中恢复，清空垃圾桶后才会删除原文件。
+
+#### 缓存与扫描速度
+
+| 情况 | 当前行为 |
+| --- | --- |
+| 切换页面再回来 | 两个清理页分别保留结果、待删除勾选、扫描选项、分页、展开状态和滚动位置，不自动重扫 |
+| 再次扫描相似照片 | 检查文件变化，复用未变化照片的感知哈希、DINOv2 特征和预览，再重新匹配分组 |
+| 新增或修改照片 | 扫描时为缺失或失效的特征重新计算；新增或恢复的照片需要重新扫描才会加入分组 |
+| 关闭并重新打开应用 | 页面结果缓存清空；本地特征和预览缓存仍可复用 |
+| 再次扫描完全重复照片 | 仍会对同大小候选文件读取内容并计算 SHA-256，目前没有 SHA-256 缓存 |
+
+首次深度扫描通常较慢。后续扫描可省去未变化照片的特征提取，但仍需检查文件、加载模型、重建检索索引和生成分组。清理操作会同步更新两个页面的结果，移除已删除的照片。
+
+## 其他功能
+
+- 本地管理：扫描本地文件，无需上传照片。
+- 非破坏性调色：调整保存在编辑数据中，不重写原始照片。
+- 格式支持：JPG、PNG、WebP、HEIC / HEIF，以及 TIF（仅限 macOS）。
+- 相机 RAW：通过内置 LightCraft 引擎读取 NEF/NRW、CR2/CR3、ARW、RAF、DNG、RW2、PEF、ORF、SRW 等；部分变体使用内嵌预览。详见 [RAW 支持范围与限制](doc/raw-support.md)。
+- 大图缩放、EXIF 信息、标签、收藏、旋转和垃圾桶恢复。
+- 统一侧栏：集中访问所有照片、收藏、垃圾桶、清理工具、标签和文件夹。
+- 图片右键菜单：复制到剪贴板、从照片库移除、从磁盘删除（移至系统回收站），以及打开所在文件夹。
+
+## 开发与文档
+
+项目使用 Tauri 2、Rust、React 和 Redux。构建环境、运行命令及依赖说明请参阅 [DEVELOP.md](DEVELOP.md)。
+
+- [相似照片清理实现与验证](doc/similar-photos.md)
+- [本地模型资源说明](src-tauri/models/README.md)
+- [RAW 支持范围与限制](doc/raw-support.md)
+- [版本更新记录](https://github.com/LoyWork/Loy_Picturama/releases)
