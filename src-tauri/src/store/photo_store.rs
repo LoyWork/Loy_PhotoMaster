@@ -604,7 +604,7 @@ fn like_escape(s: &str) -> String {
 
 /// Map a rusqlite Row to a Photo.
 /// SQLite stores booleans as 0/1 integers; we convert them here.
-fn photo_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<Photo> {
+pub(crate) fn photo_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<Photo> {
     Ok(Photo {
         id:              row.get("id")?,
         master_dir:      row.get("master_dir")?,

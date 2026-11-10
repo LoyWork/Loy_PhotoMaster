@@ -31,6 +31,8 @@ import LibraryBottomBar from './LibraryBottomBar'
 import FolderSidebar from './FolderSidebar'
 import FolderSidebarResizer from './FolderSidebarResizer'
 import Grid from './Grid'
+import SimilarPhotos from './SimilarPhotos'
+import Toolbar from 'app/ui/widget/Toolbar'
 
 import './Library.less'
 
@@ -88,7 +90,9 @@ interface DispatchProps {
 export interface Props extends OwnProps, StateProps, DispatchProps {
 }
 
-export class Library extends React.Component<Props> {
+export class Library extends React.Component<Props, { showSimilar: boolean }> {
+
+    state = { showSimilar: false }
 
     constructor(props: Props) {
         super(props)
@@ -118,6 +122,23 @@ export class Library extends React.Component<Props> {
 
     render() {
         const { props } = this
+        if (this.state.showSimilar) {
+            return <div className={classNames(props.className, 'Library bp3-dark hasSimilar', {
+                hasSidebar: props.showSidebar && props.hasSidebarContent,
+            })} style={props.style}>
+                <FolderSidebar className='Library-folderSidebar' isSimilar
+                    onOpenSimilar={() => {}}
+                    onNavigate={() => this.setState({ showSimilar: false })}/>
+                <FolderSidebarResizer showInfo={false}/>
+                <Toolbar className='Library-topBar' isTopBar isLeft isRight>
+                    {props.topBarLeftItem}
+                    <Toolbar.Spacer isTopBar/>
+                </Toolbar>
+                <div className='Library-body'>
+                    <SimilarPhotos/>
+                </div>
+            </div>
+        }
         const ctrlOrMacCommand = props.isMac ? keySymbols.macCommand : keySymbols.ctrl
 
         let nonIdealStateProps: INonIdealStateProps | null = null
@@ -177,7 +198,10 @@ export class Library extends React.Component<Props> {
                 className={classNames(props.className, 'Library', { 'bp3-dark': showGrid, hasGrid: showGrid, hasRightSidebar: props.showInfo, hasSidebar: props.showSidebar && props.hasSidebarContent })}
                 style={props.style}
             >
-                <FolderSidebar className="Library-folderSidebar"/>
+                <FolderSidebar className="Library-folderSidebar" onOpenSimilar={() => {
+                    props.librarySelectionController.clearSelection()
+                    this.setState({ showSimilar: true })
+                }}/>
                 <FolderSidebarResizer showInfo={props.showInfo}/>
                 <LibraryTopBar
                     className="Library-topBar"

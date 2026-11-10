@@ -1,6 +1,8 @@
 /dist/
 /dot-picturama*/
 /node_modules/
+/src-tauri/models/*
+!/src-tauri/models/README.md
 /src-tauri/libs/
 # Written by `npm run licenses` - a build artifact, see DEVELOP.md "Licenses"
 /licenses.json.gz

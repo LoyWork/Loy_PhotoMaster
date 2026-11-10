@@ -1,12 +1,16 @@
 {
   "name": "picturama",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "Digital image organizer powered by the web",
   "author": "Til Schneider <github@murfman.de>, Loïc Nogues <nogues.loic@gmail.com>",
   "license": "MIT",
   "private": true,
   "scripts": {
-    "start": "cargo tauri dev",
+    "models:prepare": "node src/script/prepare-similarity-model.mjs",
+    "prestart": "npm run models:prepare",
+    "pretauri:dev": "npm run models:prepare",
+    "build:desktop": "npm run models:prepare && npm run build",
+    "start": "tauri dev",
     "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\" && cd src-tauri && cargo clean",
     "dev": "vite",
     "build": "vite build",

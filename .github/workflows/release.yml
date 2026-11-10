@@ -54,7 +54,11 @@ jobs:
         working-directory: src-tauri
 
       - name: Generate licenses.json.gz
-        run: npm run licenses
+        # Include the model and CPU runtime in the installer and third-party notices.
+        # The preparation script pins and verifies the model and runtime checksums.
+        run: |
+          npm run models:prepare
+          npm run licenses
 
       - uses: tauri-apps/tauri-action@v0
         env:

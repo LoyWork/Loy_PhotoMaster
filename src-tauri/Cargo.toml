@@ -1,6 +1,6 @@
 [package]
 name = "picturama"
-version = "2.0.1"
+version = "2.1.0"
 edition = "2021"
 
 [workspace]
@@ -64,6 +64,12 @@ serde_json         = "1"
 serde_yaml         = "0.9"
 # Streaming SHA-256 for exact duplicate-photo detection.
 sha2               = "0.10"
+# Bounded, local raster decoding and small previews for near-copy detection.
+image              = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp", "gif", "bmp", "tiff"] }
+# Load the packaged CPU runtime explicitly; no Python, service, or inference-time downloads.
+ort                = { version = "=2.0.0-rc.10", default-features = false, features = ["std", "load-dynamic"] }
+instant-distance   = "0.6.1"
+rayon              = "1"
 # Detects the OS UI locale to pick the app language.
 sys-locale         = "0.3"
 # The Tauri runtime: Native UI, IPC with frontend. Ships with the OS-level frosted glass
@@ -95,6 +101,16 @@ opt-level = 2
 opt-level = 2
 
 [profile.dev.package.lightcraft-color]
+opt-level = 2
+
+# Scene-vector search and image preprocessing are CPU-bound even in the desktop dev build.
+[profile.dev.package.picturama]
+opt-level = 2
+
+[profile.dev.package.instant-distance]
+opt-level = 2
+
+[profile.dev.package.image]
 opt-level = 2
 
 [workspace.package]

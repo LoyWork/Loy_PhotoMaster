@@ -1,7 +1,7 @@
 import classNames from 'classnames'
 import React from 'react'
 import { connect } from 'react-redux'
-import { FaRegStar, FaTrashAlt, FaImages, FaTag, FaFolder, FaChevronRight, FaChevronDown } from 'react-icons/fa'
+import { FaRegStar, FaTrashAlt, FaImages, FaTag, FaFolder, FaChevronRight, FaChevronDown, FaClone } from 'react-icons/fa'
 
 import { TagId, TagById, PhotoFolder } from 'app/CommonTypes'
 import { msg } from 'app/i18n/i18n'
@@ -31,6 +31,9 @@ interface SidebarEntry {
 
 interface OwnProps {
     className?: any
+    isSimilar?: boolean
+    onOpenSimilar?(): void
+    onNavigate?(): void
 }
 
 interface StateProps {
@@ -73,7 +76,7 @@ export class FolderSidebar extends React.Component<Props, { collapsed: Set<strin
                 const expanded = !this.state.collapsed.has(id)
                 return [
                     <div key={id} className={classNames('FolderSidebar-item FolderSidebar-folderRow', {
-                        isSelected: libraryFilter.filterType === 'folder' && libraryFilter.folder === id,
+                        isSelected: !this.props.isSimilar && libraryFilter.filterType === 'folder' && libraryFilter.folder === id,
                     })} style={{ paddingLeft: 8 + depth * 14 }}
                         onContextMenu={event => {
                             if (folder.path) showFolderContextMenu(folder.path, event)
@@ -88,7 +91,7 @@ export class FolderSidebar extends React.Component<Props, { collapsed: Set<strin
                             })}>{expanded ? <FaChevronDown/> : <FaChevronRight/>}</button> :
                             <span className='FolderSidebar-expandPlaceholder'/>}
                         <button className='FolderSidebar-folderSelect' title={folder.path || folder.name}
-                            aria-current={libraryFilter.filterType === 'folder' && libraryFilter.folder === id ? 'true' : undefined}
+                            aria-current={!this.props.isSimilar && libraryFilter.filterType === 'folder' && libraryFilter.folder === id ? 'true' : undefined}
                             onClick={() => this.onSelectFolder(id)}>
                             <span className='FolderSidebar-itemIcon'><FaFolder/></span>
                             <span className='FolderSidebar-itemName'>{folder.name}</span>
@@ -102,14 +105,17 @@ export class FolderSidebar extends React.Component<Props, { collapsed: Set<strin
     }
 
     private onSelectSimple(filterType: SimpleFilterType) {
+        this.props.onNavigate?.()
         this.props.setLibraryFilter({ filterType })
     }
 
     private onSelectTag(tagId: TagId) {
+        this.props.onNavigate?.()
         this.props.setLibraryFilter({ filterType: 'tag', tagId })
     }
 
     private onSelectFolder(folder: string) {
+        this.props.onNavigate?.()
         this.props.setLibraryFilter({ filterType: 'folder', folder })
     }
 
@@ -118,10 +124,12 @@ export class FolderSidebar extends React.Component<Props, { collapsed: Set<strin
     }
 
     private renderEntries(entries: SidebarEntry[]): JSX.Element[] {
+        const { props } = this
         return entries.map(entry =>
-            <div
+            <button type='button'
                 key={entry.key}
-                className={classNames('FolderSidebar-item', { isSelected: entry.isSelected })}
+                className={classNames('FolderSidebar-item FolderSidebar-navButton', { isSelected: entry.isSelected && !props.isSimilar })}
+                aria-current={entry.isSelected && !props.isSimilar ? 'page' : undefined}
                 title={entry.label}
                 onClick={entry.onSelect}
             >
@@ -130,7 +138,7 @@ export class FolderSidebar extends React.Component<Props, { collapsed: Set<strin
                 {(entry.count !== undefined) &&
                     <span className='FolderSidebar-itemCount'>{entry.count}</span>
                 }
-            </div>
+            </button>
         )
     }
 
@@ -166,6 +174,13 @@ export class FolderSidebar extends React.Component<Props, { collapsed: Set<strin
             <div className={classNames(props.className, 'FolderSidebar')} onContextMenu={event => event.preventDefault()}>
                 <div className='FolderSidebar-body'>
                     {this.renderEntries(photoEntries)}
+                    {props.onOpenSimilar && <button type='button'
+                        className={classNames('FolderSidebar-item FolderSidebar-navButton', { isSelected: props.isSimilar })}
+                        aria-current={props.isSimilar ? 'page' : undefined}
+                        onClick={props.onOpenSimilar}>
+                        <span className='FolderSidebar-itemIcon'><FaClone/></span>
+                        <span className='FolderSidebar-itemName'>{msg('Similar_title')}</span>
+                    </button>}
                     {!!props.tagIds.length &&
                         <>
                             {this.renderSectionTitle(msg('LibraryFilterButton_tag_title'))}

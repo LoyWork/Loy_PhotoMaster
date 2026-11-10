@@ -9,6 +9,8 @@ mod foreground_client;
 mod i18n;
 mod image;
 mod import_scanner;
+mod similar_photos;
+mod scene_encoder;
 mod menu;
 mod types;
 mod user_dirs;
@@ -39,6 +41,7 @@ fn main() {
         )
         .manage(foreground_client::PendingCalls::default())
         .manage(import_scanner::ImportState::default())
+        .manage(similar_photos::ScanState::default())
         .manage(menu::ExportMenuItem::default())
         .invoke_handler(tauri::generate_handler![
             // Foreground RPC
@@ -78,6 +81,9 @@ fn main() {
             // Photos
             commands::photos::fetch_total_photo_count,
             commands::photos::scan_duplicate_photos,
+            similar_photos::scan_similar_photos,
+            similar_photos::cancel_similar_scan,
+            scene_encoder::fetch_similar_model_status,
             commands::photos::fetch_photo_folders,
             commands::photos::fetch_sections,
             commands::photos::fetch_section_photos,

@@ -68,6 +68,8 @@ pub fn write_failed_marker(path: &Path, master_path: &str) -> Result<(), String>
 /// Removes the failure marker as well: this is the "the thumbnail is stale" path (a rotated or otherwise
 /// edited photo), and after an edit the render is worth another try.
 pub fn delete_thumbnail(home_dir: &Path, photo_id: PhotoId) -> Result<(), String> {
+    // A derived similarity preview must not prevent the main thumbnail from being invalidated.
+    let _ = remove_file_if_exists(&home_dir.join("thumbnails/similar").join(format!("{}.jpg", photo_id)));
     remove_file_if_exists(&thumbnail_path(home_dir, photo_id))?;
     remove_file_if_exists(&failed_marker_path(home_dir, photo_id))
 }

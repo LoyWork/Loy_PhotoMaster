@@ -54,7 +54,13 @@ function main() {
     for (const library of collectNpmPackages(texts)) {
         libraries.push(library)
     }
-    for (const library of collectExtraComponents(options.components, texts)) {
+    const sceneAssets = join('src-tauri', 'models')
+    const sceneComponents = [
+        { name: 'DINOv2 ViT-S/14', version: '8b1f705a3a7f6f062f6bdd21986c1583d3ef105d', license: 'Apache-2.0', source: 'https://huggingface.co/onnx-community/dinov2-small', textFile: join(sceneAssets, 'DINOv2-LICENSE.txt') },
+        { name: 'ONNX Runtime CPU', version: '1.22.0', license: 'MIT', source: 'https://github.com/microsoft/onnxruntime', textFile: join(sceneAssets, 'ONNXRuntime-LICENSE.txt') },
+        { name: 'ONNX Runtime third-party notices', version: '1.22.0', license: 'see notices', source: 'https://github.com/microsoft/onnxruntime', textFile: join(sceneAssets, 'ONNXRuntime-ThirdPartyNotices.txt') },
+    ].filter(spec => existsSync(spec.textFile))
+    for (const library of collectExtraComponents([...options.components, ...sceneComponents], texts)) {
         libraries.push(library)
     }
     if (options.appDir) {

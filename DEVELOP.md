@@ -111,6 +111,29 @@ where most of the real test coverage is. Several of them read real photos from `
 building or running the tests.
 
 
+### Similar-photo scene matching
+
+`npm start`, `npm run tauri:dev`, and desktop bundle builds prepare the local DINOv2 assets automatically.
+You can also run `npm run models:prepare` explicitly. The initial Windows x64 download is about 161 MB
+(the model plus the runtime archive); retained packaged assets are about 101 MB. Repeated builds reuse
+files after SHA-256 verification. No Python, model service, or inference-time network access is used.
+The ONNX CPU runtime requires the Microsoft Visual C++ x64 runtime on Windows. Other platforms keep
+the quick scan; bundled deep inference currently targets Windows x64.
+
+The model and runtime live in the ignored `src-tauri/models/` directory and are copied into
+`app/models/` in the installer. Run `npm run licenses` after preparing them to include their notices;
+release CI performs these steps in order. Real-model tests are opt-in:
+
+```
+npm run models:prepare
+cd src-tauri
+cargo test --bin Picturama -- --include-ignored
+```
+
+The opt-in tests run actual CPU inference and migrated SQLite deep scans, including warm-cache reuse,
+changed files, model-version changes, and corrupt-vector recovery. Normal tests require no model files.
+
+
 Architecture
 ------------
 

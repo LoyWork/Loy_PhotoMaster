@@ -1,6 +1,18 @@
 Changelog
 =========
 
+v2.1.0 - 2026-11-10
+-------------------
+
+  - Add Similar photo cleanup below Trash in the sidebar, with grouped photos in the main window.
+  - Offer quick perceptual-hash matching and local DINOv2 scene matching for pose and framing changes.
+  - Add preview navigation, per-photo deletion selection, keep-only-this actions, and last-photo protection.
+  - Move selected photos to the app trash with confirmation and restoration through the existing trash view.
+  - Cache image features and scene vectors; show scan progress, cancellation, and recoverable failures.
+  - Prepare and bundle verified DINOv2/ONNX Runtime assets for Windows x64 CPU inference, without uploads.
+  - Fix the development startup command to use the project's local Tauri CLI.
+
+
 v2.0.1 - 2026-10-15
 -------------------
 

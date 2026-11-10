@@ -4,6 +4,10 @@ import {
     DecodedHeifImage,
     DeletePhotosResult,
     DuplicatePhotoGroup,
+    SimilarScanResult,
+    SimilarSensitivity,
+    SimilarScanMode,
+    SimilarModelStatus,
     EmptyTrashResult,
     ExifData,
     MetaData,
@@ -174,6 +178,18 @@ const BackgroundClient = {
 
     scanDuplicatePhotos(): Promise<DuplicatePhotoGroup[]> {
         return invokeCommand('scanDuplicatePhotos')
+    },
+
+    scanSimilarPhotos(scanId: string, sensitivity: SimilarSensitivity, mode: SimilarScanMode = 'quick'): Promise<SimilarScanResult> {
+        return invokeCommand('scanSimilarPhotos', { scanId, sensitivity, mode })
+    },
+
+    fetchSimilarModelStatus(): Promise<SimilarModelStatus> {
+        return invokeCommand('fetchSimilarModelStatus')
+    },
+
+    cancelSimilarScan(scanId: string): Promise<void> {
+        return invokeCommand('cancelSimilarScan', { scanId })
     },
 
     fetchPhotoFolders(): Promise<PhotoFolder[]> {

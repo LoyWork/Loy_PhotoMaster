@@ -37,6 +37,30 @@ export interface Photo {
     /** Whether the image is in the trash (Picturama trash - not the file system's trash). */
     trashed: boolean,
 }
+export type SimilarSensitivity = 'strict' | 'standard' | 'loose'
+export type SimilarScanMode = 'quick' | 'deep'
+export interface SimilarModelStatus { ready: boolean, supported: boolean }
+export interface SimilarPhoto {
+    photo: Photo
+    fileSize: number
+    previewPath: string
+    fingerprint: string
+}
+export interface SimilarPhotoGroup { photos: SimilarPhoto[] }
+export interface SimilarScanResult {
+    groups: SimilarPhotoGroup[]
+    total: number
+    skipped: number
+    cancelled: boolean
+    mode: SimilarScanMode
+}
+export interface SimilarScanProgress {
+    scanId: string
+    phase: 'loadingModel' | 'features' | 'indexing' | 'grouping'
+    processed: number
+    total: number
+    skipped: number
+}
 export type PhotoById = { [K in PhotoId]: Photo }
 
 
