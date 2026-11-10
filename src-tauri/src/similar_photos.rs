@@ -98,7 +98,8 @@ pub async fn scan_similar_photos(
         _ => return Err("Invalid sensitivity".into()),
     };
     let mode = mode.as_deref().unwrap_or("quick");
-    let deep = match mode { "quick" => false, "deep" => true, _ => return Err("Invalid scan mode".into()) };
+    let deep = match mode { "quick" | "exact" => false, "deep" => true, _ => return Err("Invalid scan mode".into()) };
+    let exact = mode == "exact";
     let scene_threshold = match sensitivity.as_str() { "strict" => 0.92, "standard" => 0.85, _ => 0.78 };
     let cancelled = Arc::new(AtomicBool::new(false));
     {
@@ -115,7 +116,9 @@ pub async fn scan_similar_photos(
         let progress = |phase, processed, total, skipped| {
             let _ = app.emit("similar-scan-progress", Progress { scan_id: scan_id.clone(), phase, processed, total, skipped });
         };
-        if deep {
+        if exact {
+            scan_exact(&db, &home, &cancelled, progress)
+        } else if deep {
             progress("loadingModel", 0, 0, 0);
             let mut encoder = SceneEncoder::open(&assets)?;
             scan_with_encoder(&db, &home, threshold, &cancelled, Some(&mut encoder), scene_threshold, progress)
@@ -139,6 +142,64 @@ fn fingerprint(path: &Path) -> Result<(String, u64), String> {
     if !metadata.is_file() || metadata.len() > 512 * 1024 * 1024 { return Err("Not a file or exceeds 512 MiB".into()); }
     let modified = metadata.modified().map_err(|e| e.to_string())?.duration_since(std::time::UNIX_EPOCH).map_err(|e| e.to_string())?;
     Ok((format!("{}:{}:{}:{}", ALGORITHM_VERSION, path.to_string_lossy(), metadata.len(), modified.as_nanos()), metadata.len()))
+}
+
+fn scan_exact(db: &DbHandle, home: &Path, cancelled: &AtomicBool,
+    mut progress: impl FnMut(&'static str, usize, usize, usize)) -> Result<ScanResult, String> {
+    let photos = {
+        let conn = db.lock().map_err(|_| "Database unavailable")?;
+        let mut statement = conn.prepare("SELECT * FROM photos WHERE trashed = 0 ORDER BY id").map_err(|e| e.to_string())?;
+        let photos = statement.query_map([], photo_store::photo_from_row).map_err(|e| e.to_string())?
+            .collect::<rusqlite::Result<Vec<_>>>().map_err(|e| e.to_string())?;
+        photos
+    };
+    let total = photos.len();
+    let paths = photos.iter().map(|p| format!("{}/{}", p.master_dir, p.master_filename)).collect();
+    let report = crate::commands::photos::find_duplicate_photos_with_progress(paths, cancelled, &mut progress);
+    if report.cancelled { return Ok(ScanResult { groups: vec![], total, skipped: report.skipped, cancelled: true, mode: "exact" }); }
+    let mut by_path: HashMap<String, Photo> = photos.into_iter().map(|p| (format!("{}/{}", p.master_dir, p.master_filename), p)).collect();
+    let preview_dir = home.join("thumbnails/similar");
+    std::fs::create_dir_all(&preview_dir).map_err(|e| e.to_string())?;
+    let preview_total: usize = report.groups.iter().map(|g| g.paths.len()).sum();
+    let mut processed = 0;
+    let mut groups = Vec::new();
+    progress("previews", 0, preview_total, report.skipped);
+    for group in report.groups {
+        let mut items = Vec::new();
+        for path in group.paths {
+            if cancelled.load(Ordering::Relaxed) { return Ok(ScanResult { groups: vec![], total, skipped: report.skipped, cancelled: true, mode: "exact" }); }
+            if let Some(photo) = by_path.remove(&path) {
+                let preview = preview_dir.join(format!("{}.jpg", photo.id));
+                // Decode only matched files. A failed preview must not hide an exact byte match.
+                // Byte detection also covers unsupported formats, uniform images, and large files.
+                let preview_result = decode(Path::new(&path)).and_then(|image| {
+                    let small = image.thumbnail(960, 720).to_rgb8();
+                    let mut bytes = Vec::new();
+                    image::codecs::jpeg::JpegEncoder::new_with_quality(&mut bytes, 88)
+                        .encode_image(&DynamicImage::ImageRgb8(small)).map_err(|e| e.to_string())?;
+                    std::fs::write(&preview, bytes).map_err(|e| e.to_string())
+                });
+                let modified = std::fs::metadata(&path).ok().and_then(|m| m.modified().ok())
+                    .and_then(|m| m.duration_since(std::time::UNIX_EPOCH).ok()).map(|m| m.as_nanos()).unwrap_or(0);
+                let preview_path = match preview_result {
+                    Ok(()) => preview.to_string_lossy().into_owned(),
+                    Err(error) => {
+                        log::warn!("Duplicate preview unavailable for {}: {}", path, error);
+                        // Use a distinct missing path instead of showing an old, stale preview.
+                        preview_dir.join(format!("{}-unavailable.jpg", photo.id)).to_string_lossy().into_owned()
+                    }
+                };
+                items.push(SimilarPhoto { photo, file_size: group.file_size, preview_path,
+                    fingerprint: format!("exact:{}:{}", group.file_size, modified) });
+            }
+            processed += 1;
+            progress("previews", processed, preview_total, report.skipped);
+        }
+        if items.len() > 1 { groups.push(SimilarGroup { photos: items }); }
+    }
+    let cancelled = cancelled.load(Ordering::Relaxed);
+    if cancelled { groups.clear(); }
+    Ok(ScanResult { groups, total, skipped: report.skipped, cancelled, mode: "exact" })
 }
 
 fn scan(db: &DbHandle, home: &Path, threshold: u32, cancelled: &AtomicBool,
@@ -441,6 +502,46 @@ fn group_scene_candidates(candidates: Vec<Candidate>, hash_threshold: u32, scene
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn exact_scan_returns_photo_groups_and_keeps_matches_without_previews() {
+        let temp = std::env::temp_dir().join(format!("picturama-exact-test-{}-{}", std::process::id(),
+            std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+        std::fs::create_dir_all(&temp).unwrap();
+        let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+        let db = crate::store::db::open(&temp.join("test.db"), &root.join("../migrations")).unwrap();
+        // Uniform images are intentionally excluded from perceptual scans, but must still be
+        // found by exact matching. Different file bytes must remain separate even if pixels match.
+        DynamicImage::new_rgb8(24,24).save(temp.join("first.png")).unwrap();
+        let original = std::fs::read(temp.join("first.png")).unwrap();
+        std::fs::write(temp.join("copy.png"), &original).unwrap();
+        let mut modified = original.clone();
+        modified.extend_from_slice(b"different trailing metadata");
+        std::fs::write(temp.join("different.png"), modified).unwrap();
+        std::fs::write(temp.join("trashed.png"), &original).unwrap();
+        std::fs::write(temp.join("broken.jpg"), b"not an image").unwrap();
+        std::fs::write(temp.join("broken-copy.jpg"), b"not an image").unwrap();
+        for (i, name) in ["first.png","copy.png","different.png","trashed.png","broken.jpg","broken-copy.jpg","missing.jpg"].iter().enumerate() {
+            db.lock().unwrap().execute("INSERT INTO photos(id,master_dir,master_filename,master_width,master_height,edited_width,edited_height,date_section,created_at,updated_at,imported_at,trashed) VALUES (?1,?2,?3,24,24,24,24,'2026-01-01',0,0,0,?4)",
+                params![i as i64+1,temp.to_string_lossy(),name,i64::from(i==3)]).unwrap();
+        }
+        let report = scan_exact(&db,&temp,&AtomicBool::new(false),|_,_,_,_|{}).unwrap();
+        assert_eq!((report.mode,report.total,report.skipped,report.groups.len()),("exact",6,1,2));
+        let mut ids: Vec<_> = report.groups.iter().flat_map(|g|g.photos.iter().map(|p|p.photo.id)).collect();
+        ids.sort_unstable();
+        assert_eq!(ids,vec![1,2,5,6]);
+        assert_eq!(report.groups.iter().flat_map(|g|&g.photos).filter(|p|p.preview_path.ends_with("-unavailable.jpg")).count(),2);
+        assert!(temp.join("thumbnails/similar/1.jpg").exists());
+        let cancelled = scan_exact(&db,&temp,&AtomicBool::new(true),|_,_,_,_|{}).unwrap();
+        assert!(cancelled.cancelled && cancelled.groups.is_empty());
+        photo_store::update_photos(&db,&[2,6],&serde_json::json!({"trashed":true})).unwrap();
+        assert!(scan_exact(&db,&temp,&AtomicBool::new(false),|_,_,_,_|{}).unwrap().groups.is_empty());
+        assert_eq!(std::fs::read(temp.join("copy.png")).unwrap(),original);
+        assert!(temp.join("broken-copy.jpg").exists());
+        drop(db);
+        assert!(temp.starts_with(std::env::temp_dir()) && temp.file_name().unwrap().to_string_lossy().starts_with("picturama-exact-test-"));
+        std::fs::remove_dir_all(temp).unwrap();
+    }
+
     fn candidate(id: i64, hash: u64) -> Candidate {
         Candidate {
             item: SimilarPhoto { photo: Photo {

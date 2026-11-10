@@ -13,12 +13,13 @@ import {
     CHANGE_PHOTOWORK, CHANGE_PHOTOS, DELETE_PHOTOS, EMPTY_TRASH, SET_SHOW_INFO, SET_SHOW_GRADING, SET_INFO_PHOTO_DATA,
     SET_IMPORT_PROGRESS, FETCH_TAGS, SET_PHOTO_TAGS,
     OPEN_EXPORT, CLOSE_EXPORT, SET_EXPORT_OPTIONS,
-    TOGGLE_SHOW_EXPORT_REMOVE_INFO_DESC, SET_EXPORT_PROGRESS
+    TOGGLE_SHOW_EXPORT_REMOVE_INFO_DESC, SET_EXPORT_PROGRESS, UPDATE_PHOTO_CLEANUP
 } from './actionTypes'
-import { InfoPhotoDataWithoutSection, PhotoCollection, PhotoLibraryPosition, SelectionState } from './StateTypes'
+import { InfoPhotoDataWithoutSection, PhotoCollection, PhotoLibraryPosition, SelectionState, PhotoCleanupKind, PhotoCleanupSession } from './StateTypes'
 
 
 export const initAction = (uiConfig: UiConfig, settings: Settings) => action(INIT, { uiConfig, settings })
+export const updatePhotoCleanupAction = (kind: PhotoCleanupKind, update: Partial<PhotoCleanupSession>) => action(UPDATE_PHOTO_CLEANUP, { kind, update })
 export const setDevicePixelRatioAction = (devicePixelRatio: number) => action(SET_DEVICE_PIXEL_RATIO, devicePixelRatio)
 export const setWebGLSupport = (hasWebGLSupport: boolean) => action(SET_WEB_GL_SUPPORT, hasWebGLSupport)
 export const setFullScreenAction = (isFullScreen: boolean) => action(SET_FULL_SCREEN, isFullScreen)

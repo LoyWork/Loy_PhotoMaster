@@ -6,6 +6,7 @@ use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::State;
 
 use crate::app_config_builder::AppConfig;
@@ -33,33 +34,60 @@ pub async fn scan_duplicate_photos(
 }
 
 fn find_duplicate_photos(paths: Vec<String>) -> Vec<DuplicatePhotoGroup> {
-    let mut paths_by_size: HashMap<u64, Vec<String>> = HashMap::new();
-    let mut seen_paths: HashSet<String> = HashSet::new();
+    find_duplicate_photos_with_progress(paths, &AtomicBool::new(false), |_,_,_,_| {}).groups
+}
 
-    for path in paths {
+pub(crate) struct DuplicateScanReport {
+    pub groups: Vec<DuplicatePhotoGroup>,
+    pub skipped: usize,
+    pub cancelled: bool,
+}
+
+pub(crate) fn find_duplicate_photos_with_progress(paths: Vec<String>, cancelled: &AtomicBool,
+    mut progress: impl FnMut(&'static str, usize, usize, usize)) -> DuplicateScanReport {
+    let mut paths_by_size: HashMap<u64, Vec<(String, Option<std::time::SystemTime>)>> = HashMap::new();
+    let mut seen_paths: HashSet<String> = HashSet::new();
+    let mut skipped = 0;
+    let total = paths.len();
+    progress("features", 0, total, skipped);
+
+    for (index, path) in paths.into_iter().enumerate() {
+        if cancelled.load(Ordering::Relaxed) { return DuplicateScanReport { groups: vec![], skipped, cancelled: true }; }
         if !seen_paths.insert(path.clone()) {
             continue;
         }
         match std::fs::metadata(&path) {
             Ok(metadata) if metadata.is_file() => {
-                paths_by_size.entry(metadata.len()).or_default().push(path)
+                paths_by_size.entry(metadata.len()).or_default().push((path, metadata.modified().ok()))
             }
-            Ok(_) => log::warn!("Duplicate scan skipped a non-file path: {}", path),
-            Err(e) => log::warn!("Duplicate scan could not read metadata for {}: {}", path, e),
+            Ok(_) => { skipped += 1; log::warn!("Duplicate scan skipped a non-file path: {}", path); },
+            Err(e) => { skipped += 1; log::warn!("Duplicate scan could not read metadata for {}: {}", path, e); },
         }
+        if index % 8 == 0 || index + 1 == total { progress("features", index + 1, total, skipped); }
     }
 
+    let hash_total: usize = paths_by_size.values().filter(|paths| paths.len() > 1).map(Vec::len).sum();
+    let mut processed = 0;
+    progress("hashing", 0, hash_total, skipped);
     let mut groups: Vec<DuplicatePhotoGroup> = Vec::new();
     for (file_size, candidates) in paths_by_size {
         if candidates.len() < 2 {
             continue;
         }
         let mut paths_by_hash: HashMap<[u8; 32], Vec<String>> = HashMap::new();
-        for path in candidates {
-            match sha256_file(Path::new(&path)) {
-                Ok(hash) => paths_by_hash.entry(hash).or_default().push(path),
-                Err(e) => log::warn!("Duplicate scan could not hash {}: {}", path, e),
+        for (path, modified) in candidates {
+            if cancelled.load(Ordering::Relaxed) { return DuplicateScanReport { groups: vec![], skipped, cancelled: true }; }
+            match sha256_file(Path::new(&path), cancelled) {
+                Ok(Some(hash)) => {
+                    let unchanged = std::fs::metadata(&path).map(|m| m.len() == file_size && m.modified().ok() == modified).unwrap_or(false);
+                    if unchanged { paths_by_hash.entry(hash).or_default().push(path); }
+                    else { skipped += 1; log::warn!("Duplicate scan skipped a changed file: {}", path); }
+                }
+                Ok(None) => return DuplicateScanReport { groups: vec![], skipped, cancelled: true },
+                Err(e) => { skipped += 1; log::warn!("Duplicate scan could not hash {}: {}", path, e); },
             }
+            processed += 1;
+            progress("hashing", processed, hash_total, skipped);
         }
         for mut duplicate_paths in paths_by_hash.into_values().filter(|paths| paths.len() > 1) {
             duplicate_paths.sort_by_key(|path| path.to_lowercase());
@@ -70,22 +98,24 @@ fn find_duplicate_photos(paths: Vec<String>) -> Vec<DuplicatePhotoGroup> {
         }
     }
     groups.sort_by(|a, b| a.paths[0].to_lowercase().cmp(&b.paths[0].to_lowercase()));
-    groups
+    if cancelled.load(Ordering::Relaxed) { groups.clear(); }
+    DuplicateScanReport { groups, skipped, cancelled: cancelled.load(Ordering::Relaxed) }
 }
 
-fn sha256_file(path: &Path) -> Result<[u8; 32], String> {
+fn sha256_file(path: &Path, cancelled: &AtomicBool) -> Result<Option<[u8; 32]>, String> {
     let file = File::open(path).map_err(|e| e.to_string())?;
     let mut reader = BufReader::with_capacity(128 * 1024, file);
     let mut hasher = Sha256::new();
     let mut buffer = [0u8; 128 * 1024];
     loop {
+        if cancelled.load(Ordering::Relaxed) { return Ok(None); }
         let count = reader.read(&mut buffer).map_err(|e| e.to_string())?;
         if count == 0 {
             break;
         }
         hasher.update(&buffer[..count]);
     }
-    Ok(hasher.finalize().into())
+    Ok(Some(hasher.finalize().into()))
 }
 
 /// The filter with the configured photo roots filled in, so the store layer can resolve a folder
@@ -315,5 +345,26 @@ mod duplicate_tests {
         assert_eq!(groups[0].paths.len(), 2);
         assert!(groups[0].paths.iter().any(|path| path.ends_with("original.jpg")));
         assert!(groups[0].paths.iter().any(|path| path.ends_with("renamed-copy.png")));
+    }
+
+    #[test]
+    fn duplicate_scan_cancels_and_rejects_files_changed_during_scan() {
+        let dir = TempDir::new();
+        let first = dir.0.join("first.jpg");
+        let second = dir.0.join("second.jpg");
+        std::fs::write(&first,b"identical photo bytes").unwrap();
+        std::fs::write(&second,b"identical photo bytes").unwrap();
+        let paths = vec![first.to_string_lossy().into_owned(),second.to_string_lossy().into_owned()];
+        let cancelled = AtomicBool::new(false);
+        let report = find_duplicate_photos_with_progress(paths.clone(),&cancelled,|phase,processed,_,_| {
+            if phase=="hashing" && processed==0 { cancelled.store(true,Ordering::Relaxed); }
+        });
+        assert!(report.cancelled && report.groups.is_empty());
+        assert!(sha256_file(&first,&cancelled).unwrap().is_none());
+        let report = find_duplicate_photos_with_progress(paths,&AtomicBool::new(false),|phase,processed,_,_| {
+            if phase=="hashing" && processed==0 { std::fs::write(&first,b"changed").unwrap(); }
+        });
+        assert!(!report.cancelled && report.groups.is_empty());
+        assert_eq!(report.skipped,1);
     }
 }

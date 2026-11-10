@@ -38,7 +38,7 @@ export interface Photo {
     trashed: boolean,
 }
 export type SimilarSensitivity = 'strict' | 'standard' | 'loose'
-export type SimilarScanMode = 'quick' | 'deep'
+export type SimilarScanMode = 'quick' | 'deep' | 'exact'
 export interface SimilarModelStatus { ready: boolean, supported: boolean }
 export interface SimilarPhoto {
     photo: Photo
@@ -56,7 +56,7 @@ export interface SimilarScanResult {
 }
 export interface SimilarScanProgress {
     scanId: string
-    phase: 'loadingModel' | 'features' | 'indexing' | 'grouping'
+    phase: 'loadingModel' | 'features' | 'indexing' | 'grouping' | 'hashing' | 'previews'
     processed: number
     total: number
     skipped: number

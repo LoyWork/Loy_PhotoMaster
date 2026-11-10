@@ -90,9 +90,9 @@ interface DispatchProps {
 export interface Props extends OwnProps, StateProps, DispatchProps {
 }
 
-export class Library extends React.Component<Props, { showSimilar: boolean }> {
+export class Library extends React.Component<Props, { cleanupView: 'similar' | 'duplicates' | null }> {
 
-    state = { showSimilar: false }
+    state: { cleanupView: 'similar' | 'duplicates' | null } = { cleanupView: null }
 
     constructor(props: Props) {
         super(props)
@@ -122,20 +122,21 @@ export class Library extends React.Component<Props, { showSimilar: boolean }> {
 
     render() {
         const { props } = this
-        if (this.state.showSimilar) {
+        if (this.state.cleanupView) {
             return <div className={classNames(props.className, 'Library bp3-dark hasSimilar', {
                 hasSidebar: props.showSidebar && props.hasSidebarContent,
             })} style={props.style}>
-                <FolderSidebar className='Library-folderSidebar' isSimilar
-                    onOpenSimilar={() => {}}
-                    onNavigate={() => this.setState({ showSimilar: false })}/>
+                <FolderSidebar className='Library-folderSidebar' cleanupView={this.state.cleanupView}
+                    onOpenSimilar={() => this.setState({ cleanupView: 'similar' })}
+                    onOpenDuplicates={() => this.setState({ cleanupView: 'duplicates' })}
+                    onNavigate={() => this.setState({ cleanupView: null })}/>
                 <FolderSidebarResizer showInfo={false}/>
                 <Toolbar className='Library-topBar' isTopBar isLeft isRight>
                     {props.topBarLeftItem}
                     <Toolbar.Spacer isTopBar/>
                 </Toolbar>
                 <div className='Library-body'>
-                    <SimilarPhotos/>
+                    <SimilarPhotos key={this.state.cleanupView} kind={this.state.cleanupView}/>
                 </div>
             </div>
         }
@@ -200,7 +201,10 @@ export class Library extends React.Component<Props, { showSimilar: boolean }> {
             >
                 <FolderSidebar className="Library-folderSidebar" onOpenSimilar={() => {
                     props.librarySelectionController.clearSelection()
-                    this.setState({ showSimilar: true })
+                    this.setState({ cleanupView: 'similar' })
+                }} onOpenDuplicates={() => {
+                    props.librarySelectionController.clearSelection()
+                    this.setState({ cleanupView: 'duplicates' })
                 }}/>
                 <FolderSidebarResizer showInfo={props.showInfo}/>
                 <LibraryTopBar

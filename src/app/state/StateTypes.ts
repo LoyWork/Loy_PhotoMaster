@@ -1,5 +1,6 @@
 import { PhotoId, TagId, TagById, PhotoSectionId, PhotoSectionById, Settings, UiConfig, PhotoDetail, PhotoWork, ImportProgress, PhotoFilter, PhotoExportOptions, PhotoExportProgress, MetaData, ExifData, Photo, PhotoFolder} from 'app/CommonTypes'
 import { FetchState } from 'app/UITypes'
+import { SimilarModelStatus, SimilarScanMode, SimilarScanResult, SimilarSensitivity } from 'app/CommonTypes'
 
 
 export type AppState = {
@@ -10,6 +11,23 @@ export type AppState = {
     info: InfoState
     import: ImportState
     export: ExportState
+    photoCleanup: Record<PhotoCleanupKind, PhotoCleanupSession>
+}
+
+export type PhotoCleanupKind = 'similar' | 'duplicates'
+
+/** In-memory workspace for each cleanup page; not persisted across app restarts. */
+export interface PhotoCleanupSession {
+    mode: SimilarScanMode
+    model: SimilarModelStatus | null
+    sensitivity: SimilarSensitivity
+    result: SimilarScanResult | null
+    selected: Set<PhotoId>
+    page: number
+    scrollTop: number
+    expandedGroups: Record<number, number>
+    hadGroups: boolean
+    notice: string
 }
 
 

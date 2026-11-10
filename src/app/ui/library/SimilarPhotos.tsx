@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Alert, Button, Checkbox, Dialog, HTMLSelect, NonIdealState, ProgressBar, Spinner } from '@blueprintjs/core'
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
@@ -10,6 +10,7 @@ import { changePhotosAction } from 'app/state/actions'
 import store from 'app/state/store'
 import { keepOnlySimilarPhoto, selectSimilarPhoto } from 'app/util/SimilarPhotoSelection'
 import './SimilarPhotos.less'
+import usePhotoCleanupSession from './usePhotoCleanupSession'
 
 const pageSize = 12
 const formatSize = (bytes: number) => bytes >= 1024 ** 3 ? `${(bytes / 1024 ** 3).toFixed(2)} GB` : `${(bytes / 1024 ** 2).toFixed(1)} MB`
@@ -21,11 +22,11 @@ function PhotoPreview({ item }: { item: SimilarPhoto }) {
         <img loading='lazy' src={previewSrc(item)} alt={item.photo.masterFilename} onError={() => setFailed(true)}/>
 }
 
-function PhotoGroup({ group, index, selected, disabled, onToggle, onKeep, onPreview }: {
+function PhotoGroup({ group, index, selected, disabled, visible, onMore, onToggle, onKeep, onPreview }: {
     group: SimilarPhotoGroup, index: number, selected: Set<PhotoId>, disabled: boolean,
+    visible: number, onMore(): void,
     onToggle(id: PhotoId): void, onKeep(id: PhotoId): void, onPreview(item: SimilarPhoto): void,
 }) {
-    const [visible, setVisible] = useState(24)
     const kept = group.photos.filter(item => !selected.has(item.photo.id)).length
     return <section className='SimilarPhotos-group' aria-label={msg('Similar_group', index, group.photos.length)}>
         <header><h2>{msg('Similar_group', index, group.photos.length)}</h2>
@@ -54,39 +55,48 @@ function PhotoGroup({ group, index, selected, disabled, onToggle, onKeep, onPrev
                 </article>
             })}
         </div>
-        {visible < group.photos.length && <Button minimal onClick={() => setVisible(v => v + 24)}>
+        {visible < group.photos.length && <Button minimal onClick={onMore}>
             {msg('Similar_morePhotos', group.photos.length - visible)}</Button>}
     </section>
 }
 
-export default function SimilarPhotos() {
-    const [mode, setMode] = useState<SimilarScanMode>('deep')
-    const [model, setModel] = useState<SimilarModelStatus | null>(null)
-    const [sensitivity, setSensitivity] = useState<SimilarSensitivity>('standard')
-    const [result, setResult] = useState<SimilarScanResult | null>(null)
+export default function SimilarPhotos({ kind = 'similar' }: { kind?: 'similar' | 'duplicates' }) {
+    const exact = kind === 'duplicates'
+    const { session, set } = usePhotoCleanupSession(kind)
+    const { mode, model, sensitivity, result, selected, page, notice, hadGroups, expandedGroups } = session
+    const setMode = (value: SimilarScanMode) => set('mode', value)
+    const setSensitivity = (value: SimilarSensitivity) => set('sensitivity', value)
+    const setResult = (value: SimilarScanResult | null) => set('result', value)
+    const setSelected = (value: React.SetStateAction<Set<PhotoId>>) => set('selected', value)
+    const setPage = (value: number) => set('page', value)
+    const setNotice = (value: string) => set('notice', value)
+    const setModel = (value: SimilarModelStatus) => set('model', value)
     const [scanning, setScanning] = useState(false)
     const [stopping, setStopping] = useState(false)
     const [progress, setProgress] = useState<SimilarScanProgress | null>(null)
-    const [selected, setSelected] = useState(new Set<PhotoId>())
     const [error, setError] = useState('')
-    const [notice, setNotice] = useState('')
     const [confirm, setConfirm] = useState(false)
     const [deleting, setDeleting] = useState(false)
-    const [page, setPage] = useState(0)
     const [preview, setPreview] = useState<SimilarPhoto | null>(null)
     const mounted = useRef(true)
     const scanId = useRef<string | null>(null)
     const cancelRequested = useRef(false)
     const scroll = useRef<HTMLDivElement>(null)
-    const hadGroups = useRef(false)
     const groups = result?.groups || []
     const allPhotos = groups.flatMap(group => group.photos)
     const selectedPhotos = allPhotos.filter(item => selected.has(item.photo.id))
     const selectedSize = selectedPhotos.reduce((sum, item) => sum + item.fileSize, 0)
     const busy = scanning || deleting
 
+    useLayoutEffect(() => {
+        const element = scroll.current
+        if (!element) return
+        element.scrollTop = session.scrollTop
+        return () => set('scrollTop', element.scrollTop)
+    }, [])
+
     useEffect(() => {
-        BackgroundClient.fetchSimilarModelStatus().then(status => {
+        if (!exact) BackgroundClient.fetchSimilarModelStatus().then(status => {
             if (!mounted.current) return
             setModel(status)
             if (!status.supported) setMode('quick')
@@ -106,7 +116,8 @@ export default function SimilarPhotos() {
         cancelRequested.current = false
         setScanning(true); setStopping(false); setProgress(null); setError(''); setNotice('')
         setResult(null); setSelected(new Set()); setPage(0); setPreview(null)
-        hadGroups.current = false
+        set('hadGroups', false); set('expandedGroups', {})
+        scroll.current?.scrollTo(0, 0)
         let unlisten: (() => void) | undefined
         try {
             unlisten = await listen<SimilarScanProgress>('similar-scan-progress', event => {
@@ -117,9 +128,12 @@ export default function SimilarPhotos() {
             const next = await BackgroundClient.scanSimilarPhotos(id, sensitivity, mode)
             if (!mounted.current) return
             if (next.cancelled) setNotice(msg('Similar_cancelled'))
-            else { setResult(next); hadGroups.current = next.groups.length > 0 }
+            else { setResult(next); set('hadGroups', next.groups.length > 0) }
         } catch (e) {
-            if (mounted.current) setError(`${msg('Similar_scanFailed')} ${String(e)}`)
+            const detail = String(e)
+            if (mounted.current) setError(exact && detail.includes('Invalid scan mode')
+                ? msg('Duplicates_restartRequired')
+                : `${msg(exact ? 'Duplicates_scanFailed' : 'Similar_scanFailed')} ${detail}`)
         } finally {
             unlisten?.()
             scanId.current = null
@@ -144,10 +158,6 @@ export default function SimilarPhotos() {
             store.dispatch(changePhotosAction(items.map(item => ({ ...item.photo, trashed: true })), { trashed: true }))
             fetchSections(); fetchPhotoFolders()
             if (!mounted.current) return
-            const ids = new Set(items.map(item => item.photo.id))
-            setResult(current => current && ({ ...current, groups: current.groups
-                .map(group => ({ photos: group.photos.filter(item => !ids.has(item.photo.id)) }))
-                .filter(group => group.photos.length > 1) }))
             setSelected(new Set()); setPage(0); setPreview(null)
             setNotice(msg('Similar_moved', items.length))
         } catch (e) {
@@ -163,9 +173,9 @@ export default function SimilarPhotos() {
 
     return <div className='SimilarPhotos'>
         <header className='SimilarPhotos-heading'>
-            <div><h1>{msg('Similar_title')}</h1><p>{msg('Similar_description')}</p></div>
+            <div><h1>{msg(exact ? 'Duplicates_title' : 'Similar_title')}</h1><p>{msg(exact ? 'Duplicates_description' : 'Similar_description')}</p></div>
             <div className='SimilarPhotos-scanControls'>
-                <label>{msg('Similar_mode')}
+                {!exact && <><label>{msg('Similar_mode')}
                     <HTMLSelect value={mode} disabled={busy} onChange={e => setMode(e.target.value as SimilarScanMode)} options={[
                         { value: 'quick', label: msg('Similar_quick') },
                         { value: 'deep', label: msg('Similar_deep'), disabled: model?.supported === false },
@@ -174,38 +184,43 @@ export default function SimilarPhotos() {
                 <label>{msg('Similar_sensitivity')}
                     <HTMLSelect value={sensitivity} disabled={busy} onChange={e => setSensitivity(e.target.value as SimilarSensitivity)}
                         options={(['strict', 'standard', 'loose'] as const).map(value => ({ value, label: msg(`Similar_${value}`) }))}/>
-                </label>
+                </label></>}
                 <Button icon='search' intent='primary' disabled={busy || selected.size > 0 || (mode === 'deep' && !model?.ready)} onClick={startScan}>
                     {msg(result ? 'Similar_rescan' : 'Similar_scan')}</Button>
             </div>
         </header>
         <div className='SimilarPhotos-scroll' ref={scroll}>
-            <p className='SimilarPhotos-modeHint'>{msg(mode === 'deep' ? 'Similar_deepScope' : 'Similar_scope')}</p>
+            <p className='SimilarPhotos-modeHint'>{msg(exact ? 'Duplicates_scope' : mode === 'deep' ? 'Similar_deepScope' : 'Similar_scope')}</p>
             {mode === 'deep' && !model?.ready && <div className='SimilarPhotos-notice' role='status'>
                 {msg(model === null ? 'Similar_checkingModel' : 'Similar_modelMissing')}
             </div>}
             {error && <div className='SimilarPhotos-error' role='alert'>{error}</div>}
             {notice && <div className='SimilarPhotos-notice' role='status'>{notice}</div>}
             {scanning && <div className='SimilarPhotos-scanState' role='status' aria-live='polite'>
-                <Spinner size={32}/><h2>{msg(progress?.phase === 'loadingModel' ? 'Similar_loadingModel' :
+                <Spinner size={32}/><h2>{msg(exact ? (progress?.phase === 'hashing' ? 'Duplicates_hashing' :
+                    progress?.phase === 'previews' ? 'Duplicates_previews' : 'Duplicates_scanning') :
+                    progress?.phase === 'loadingModel' ? 'Similar_loadingModel' :
                     progress?.phase === 'indexing' ? 'Similar_indexing' : progress?.phase === 'grouping' ? 'Similar_grouping' :
                     mode === 'deep' ? 'Similar_deepScanning' : 'Similar_scanning')}</h2>
                 <p>{progress && progress.total > 0 ? msg('Similar_progress', progress.processed, progress.total, progress.skipped) : msg('Similar_preparing')}</p>
                 <ProgressBar stripes={false} animate={false} value={progress && progress.total > 0 ? progress.processed / progress.total : 0}/>
                 <Button disabled={stopping} onClick={cancelScan}>{msg(stopping ? 'Similar_stopping' : 'common_cancel')}</Button>
             </div>}
-            {!scanning && !result && <NonIdealState icon='search' title={msg('Similar_ready')}
-                description={msg('Similar_localOnly')}/>}
+            {!scanning && !result && <NonIdealState icon='search' title={msg(exact ? 'Duplicates_ready' : 'Similar_ready')}
+                description={msg(exact ? 'Duplicates_localOnly' : 'Similar_localOnly')}/>}
             {!scanning && result && <>
                 <div className='SimilarPhotos-summary' role='status'>
-                    <span>{msg(result.mode === 'deep' ? 'Similar_deep' : 'Similar_quick')}</span>
+                    <span>{msg(result.mode === 'exact' ? 'Duplicates_title' : result.mode === 'deep' ? 'Similar_deep' : 'Similar_quick')}</span>
                     {msg('Similar_summary', groups.length, allPhotos.length, result.total)}
-                    {result.skipped > 0 && <span>{msg('Similar_skipped', result.skipped)}</span>}
+                    {result.skipped > 0 && <span>{msg(exact ? 'Duplicates_skipped' : 'Similar_skipped', result.skipped)}</span>}
                 </div>
-                {groups.length === 0 && <NonIdealState icon='tick' title={msg(hadGroups.current ? 'Similar_done' : 'Similar_none')}
-                    description={msg('Similar_localOnly')}/>}
+                {groups.length === 0 && <NonIdealState icon='tick' title={msg(hadGroups ? 'Similar_done' : exact ? 'Duplicates_none' : 'Similar_none')}
+                    description={msg(exact ? 'Duplicates_localOnly' : 'Similar_localOnly')}/>}
                 {groups.slice(currentPage * pageSize, (currentPage + 1) * pageSize).map((group, index) =>
                     <PhotoGroup key={group.photos[0].photo.id} group={group} index={currentPage * pageSize + index + 1}
+                        visible={expandedGroups[group.photos[0].photo.id] || 24}
+                        onMore={() => set('expandedGroups', current => ({ ...current,
+                            [group.photos[0].photo.id]: (current[group.photos[0].photo.id] || 24) + 24 }))}
                         selected={selected} disabled={deleting} onPreview={setPreview}
                         onToggle={id => setSelected(current => selectSimilarPhoto(current, group, id))}
                         onKeep={id => setSelected(current => keepOnlySimilarPhoto(current, group, id))}/>

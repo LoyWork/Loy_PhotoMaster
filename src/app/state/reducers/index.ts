@@ -9,6 +9,7 @@ import { detail } from './detail'
 import { info } from './info'
 import { importReducer } from './import'
 import { exportReducer } from './export'
+import { photoCleanup } from './photoCleanup'
 
 
 export default (state: AppState = {} as AppState, action: Action) => {
@@ -23,5 +24,6 @@ export default (state: AppState = {} as AppState, action: Action) => {
         info: info(state.info, libraryState, action),
         import: importReducer(state.import, action),
         export: exportReducer(state.export, dataState, action),
+        photoCleanup: photoCleanup(state.photoCleanup, action),
     }
 }

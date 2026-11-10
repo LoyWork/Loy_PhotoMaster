@@ -6,7 +6,7 @@ import { convertFileSrc } from '@tauri-apps/api/core'
 import { FaChevronLeft } from 'react-icons/fa'
 
 import BackgroundClient from 'app/BackgroundClient'
-import { AppearanceSettings, DuplicatePhotoGroup, Settings } from 'app/CommonTypes'
+import { AppearanceSettings, Settings } from 'app/CommonTypes'
 import { showError } from 'app/ErrorPresenter'
 import { msg } from 'app/i18n/i18n'
 import LicenseDialog from 'app/ui/license/LicenseDialog'
@@ -47,8 +47,6 @@ export interface Props extends OwnProps, StateProps, DispatchProps {}
 
 interface State {
     showLicenses: boolean
-    duplicateScanRunning: boolean
-    duplicateGroups: DuplicatePhotoGroup[] | null
 }
 
 export class SettingsPane extends React.Component<Props, State> {
@@ -57,11 +55,9 @@ export class SettingsPane extends React.Component<Props, State> {
         super(props)
         this.state = {
             showLicenses: false,
-            duplicateScanRunning: false,
-            duplicateGroups: null,
         }
         bindMany(this, 'onPhotoDirsChange', 'onAddPhotoDir', 'onClose', 'onCloseAndImport', 'getDecorationWidth',
-            'onShowLicenses', 'onLicensesClosed', 'onScanDuplicates', 'onChooseWallpaper', 'onResetWallpaper')
+            'onShowLicenses', 'onLicensesClosed', 'onChooseWallpaper', 'onResetWallpaper')
     }
 
     private onPhotoDirsChange(photoDirs: string[]) {
@@ -97,18 +93,6 @@ export class SettingsPane extends React.Component<Props, State> {
 
     private onLicensesClosed() {
         this.setState({ showLicenses: false })
-    }
-
-    private onScanDuplicates() {
-        this.setState({ duplicateScanRunning: true })
-        BackgroundClient.scanDuplicatePhotos()
-            .then(duplicateGroups => {
-                this.setState({ duplicateScanRunning: false, duplicateGroups })
-            })
-            .catch(error => {
-                this.setState({ duplicateScanRunning: false })
-                showError('Scanning duplicate photos failed', error)
-            })
     }
 
     private get appearance(): AppearanceSettings {
@@ -198,42 +182,6 @@ export class SettingsPane extends React.Component<Props, State> {
                             />
                         </section>
                         <section className='SettingsPane-section'>
-                            <h2>{msg('Settings_duplicatesTitle')}</h2>
-                            <p>{msg('Settings_duplicatesDescription')}</p>
-                            <Button
-                                className='SettingsPane-scanDuplicates'
-                                icon='search'
-                                loading={state.duplicateScanRunning}
-                                disabled={state.duplicateScanRunning}
-                                text={state.duplicateScanRunning
-                                    ? msg('Settings_scanningDuplicates')
-                                    : msg('Settings_scanDuplicates')}
-                                onClick={this.onScanDuplicates}
-                            />
-                            {state.duplicateGroups !== null && !state.duplicateScanRunning &&
-                                (state.duplicateGroups.length === 0
-                                    ? <p className='SettingsPane-noDuplicates'>{msg('Settings_noDuplicates')}</p>
-                                    : <div className='SettingsPane-duplicateResults'>
-                                        <p>{msg('Settings_duplicateGroupsFound',
-                                            formatNumber(state.duplicateGroups.length))}</p>
-                                        {state.duplicateGroups.map((group, index) =>
-                                            <div className='SettingsPane-duplicateGroup' key={group.paths[0]}>
-                                                <div className='SettingsPane-duplicateGroupTitle'>
-                                                    {msg('Settings_duplicateGroup', formatNumber(index + 1),
-                                                        formatNumber(group.paths.length), formatFileSize(group.fileSize))}
-                                                </div>
-                                                {group.paths.map(path =>
-                                                    <div className='SettingsPane-duplicatePath' key={path} title={path}>
-                                                        {path}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                )
-                            }
-                        </section>
-                        <section className='SettingsPane-section'>
                             <h2>{msg('Settings_appearanceTitle')}</h2>
                             <p className='SettingsPane-wallpaperLabel'>{msg('Settings_wallpaperLabel')}</p>
                             <div className='SettingsPane-wallpaperPreview'
@@ -297,18 +245,6 @@ export class SettingsPane extends React.Component<Props, State> {
 function renderPhotoDir(photoDir: string): ReactNode {
     return photoDir
 }
-
-function formatFileSize(bytes: number): string {
-    if (bytes < 1000) {
-        return `${formatNumber(bytes)} B`
-    } else if (bytes < 1000000) {
-        return `${formatNumber(bytes / 1000, 1)} kB`
-    } else if (bytes < 1000000000) {
-        return `${formatNumber(bytes / 1000000, 1)} MB`
-    }
-    return `${formatNumber(bytes / 1000000000, 1)} GB`
-}
-
 
 const Connected = connect<StateProps, DispatchProps, OwnProps, AppState>(
     (state: AppState, props: OwnProps) => {
