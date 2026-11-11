@@ -6,6 +6,7 @@ use std::sync::{Arc, Mutex};
 
 use image::{imageops::FilterType, DynamicImage, ImageReader};
 use rusqlite::params;
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, State};
 use crate::app_config_builder::AppConfig;
@@ -13,7 +14,7 @@ use crate::store::{db::DbHandle, photo_store};
 use crate::types::common_types::{Photo, PhotoId};
 use crate::scene_encoder::{self, SceneEncoder};
 
-const ALGORITHM_VERSION: u32 = 1;
+const ALGORITHM_VERSION: u32 = 2;
 const MAX_PIXELS: u64 = 80_000_000;
 
 type ActiveScan = (String, Arc<AtomicBool>);
@@ -74,11 +75,6 @@ struct Candidate {
     item: SimilarPhoto,
     feature: Feature,
     embedding: Option<Vec<f32>>,
-}
-
-enum PhotoScanError { Photo(String), Fatal(String) }
-impl From<String> for PhotoScanError {
-    fn from(error: String) -> Self { Self::Photo(error) }
 }
 
 #[tauri::command]
@@ -235,56 +231,54 @@ fn scan_with_encoder(db: &DbHandle, home: &Path, threshold: u32, cancelled: &Ato
     let mut candidates = Vec::new();
     let mut skipped = 0;
     progress("features", 0, total, skipped);
-    for (index, photo) in photos.into_iter().enumerate() {
+    // Bound full-size decodes (up to 384 MiB each) and queued previews.
+    let workers = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(2).clamp(1, 2);
+    let pool = rayon::ThreadPoolBuilder::new().num_threads(workers).build().map_err(|e| e.to_string())?;
+    let mut photos = photos.into_iter();
+    let mut processed = 0;
+    loop {
         if cancelled.load(Ordering::Relaxed) { return Ok(ScanResult { groups: vec![], total, skipped, cancelled: true, mode }); }
-        let path = PathBuf::from(&photo.master_dir).join(&photo.master_filename);
-        let preview = preview_dir.join(format!("{}.jpg", photo.id));
-        let result = (|| -> Result<Candidate, PhotoScanError> {
-            let (key, file_size) = fingerprint(&path)?;
-            let cached_feature = cached.get(&photo.id).filter(|(old_key, _)| *old_key == key)
-                .and_then(|(_, json)| serde_json::from_str::<Feature>(json).ok())
-                .filter(|f| f.low_detail || preview.exists());
-            let cached_vector = cached_scenes.get(&photo.id).filter(|(old_key, _)| *old_key == key)
-                .and_then(|(_, bytes)| scene_encoder::from_bytes(bytes));
-            let need_feature = cached_feature.is_none();
-            let need_vector = deep && cached_vector.is_none() && !cached_feature.as_ref().map_or(false, |f| f.low_detail);
-            let image = if need_feature || need_vector { Some(decode(&path)?) } else { None };
-            let feature = cached_feature.unwrap_or_else(|| describe(image.as_ref().unwrap()));
-            if need_feature && !feature.low_detail {
-                let small = image.as_ref().unwrap().thumbnail(960, 720).to_rgb8();
-                let mut bytes = Vec::new();
-                image::codecs::jpeg::JpegEncoder::new_with_quality(&mut bytes, 88).encode_image(&DynamicImage::ImageRgb8(small)).map_err(|e| e.to_string())?;
-                std::fs::write(&preview, bytes).map_err(|e| e.to_string())?;
+        let batch: Vec<_> = photos.by_ref().take(8).collect();
+        if batch.is_empty() { break; }
+        // Decode/hash/preview in parallel. Keep one model with bounded intra-op threads.
+        let prepared: Vec<_> = pool.install(|| batch.into_par_iter().map(|photo| {
+            if cancelled.load(Ordering::Relaxed) { return Ok(None); }
+            prepare_photo(photo, &preview_dir, &cached, &cached_scenes, deep).map(Some)
+        }).collect());
+        let mut writes = Vec::new();
+        for result in prepared {
+            if cancelled.load(Ordering::Relaxed) { break; }
+            match result {
+                Ok(Some((mut candidate, image, need_feature, need_vector))) => {
+                    if need_vector {
+                        candidate.embedding = Some(encoder.as_deref_mut().unwrap()
+                            .encode(image.as_ref().unwrap())?);
+                    }
+                    writes.push((candidate.item.photo.id, candidate.item.fingerprint.clone(),
+                        need_feature.then(|| serde_json::to_string(&candidate.feature)).transpose().map_err(|e| e.to_string())?,
+                        candidate.embedding.as_ref().filter(|_| need_vector).map(|v| scene_encoder::to_bytes(v))));
+                    if candidate.feature.low_detail { skipped += 1; } else { candidates.push(candidate); }
+                }
+                Ok(None) => {},
+                Err(error) => { skipped += 1; log::warn!("Similar scan skipped: {error}"); }
             }
-            let embedding = if deep && !feature.low_detail {
-                match cached_vector {
-                    Some(vector) => Some(vector),
-                    None => Some(encoder.as_deref_mut().unwrap().encode(image.as_ref().unwrap()).map_err(PhotoScanError::Fatal)?),
-                }
-            } else { None };
-            if image.is_some() && fingerprint(&path)?.0 != key { return Err(PhotoScanError::Photo("File changed during scan; retry".into())); }
-            if need_feature || (need_vector && embedding.is_some()) {
-                let conn = db.lock().map_err(|_| PhotoScanError::Fatal("Database unavailable".into()))?;
-                if need_feature {
-                    conn.execute("INSERT OR REPLACE INTO photo_similarity_features(photo_id, fingerprint, feature) VALUES (?1, ?2, ?3)",
-                        params![photo.id, key, serde_json::to_string(&feature).map_err(|e| e.to_string())?])
-                        .map_err(|e| PhotoScanError::Fatal(e.to_string()))?;
-                }
-                if let Some(vector) = embedding.as_ref().filter(|_| need_vector) {
-                    conn.execute("INSERT OR REPLACE INTO photo_scene_features(photo_id, fingerprint, model_version, embedding) VALUES (?1, ?2, ?3, ?4)",
-                        params![photo.id, key, scene_encoder::MODEL_VERSION, scene_encoder::to_bytes(vector)])
-                        .map_err(|e| PhotoScanError::Fatal(e.to_string()))?;
-                }
-            }
-            Ok(Candidate { item: SimilarPhoto { photo, file_size, preview_path: preview.to_string_lossy().into_owned(), fingerprint: key }, feature, embedding })
-        })();
-        match result {
-            Ok(candidate) if !candidate.feature.low_detail => candidates.push(candidate),
-            Ok(_) => skipped += 1,
-            Err(PhotoScanError::Photo(error)) => { skipped += 1; log::warn!("Similar scan skipped {}: {}", path.display(), error); }
-            Err(PhotoScanError::Fatal(error)) => return Err(error),
+            processed += 1;
+            progress("features", processed, total, skipped);
         }
-        if index % 8 == 0 || index + 1 == total { progress("features", index + 1, total, skipped); }
+        // Commit once per small batch; never hold the DB lock during IO/inference.
+        let mut conn = db.lock().map_err(|_| "Database unavailable")?;
+        let tx = conn.transaction().map_err(|e| e.to_string())?;
+        for (id, key, feature, vector) in writes {
+            if let Some(feature) = feature {
+                tx.execute("INSERT OR REPLACE INTO photo_similarity_features(photo_id, fingerprint, feature) VALUES (?1, ?2, ?3)",
+                    params![id, key, feature]).map_err(|e| e.to_string())?;
+            }
+            if let Some(vector) = vector {
+                tx.execute("INSERT OR REPLACE INTO photo_scene_features(photo_id, fingerprint, model_version, embedding) VALUES (?1, ?2, ?3, ?4)",
+                    params![id, key, scene_encoder::MODEL_VERSION, vector]).map_err(|e| e.to_string())?;
+            }
+        }
+        tx.commit().map_err(|e| e.to_string())?;
     }
     let count = candidates.len();
     let groups = if deep {
@@ -295,6 +289,44 @@ fn scan_with_encoder(db: &DbHandle, home: &Path, threshold: u32, cancelled: &Ato
         group_candidates(candidates, threshold, cancelled, |processed| progress("grouping", processed, count, skipped))
     };
     Ok(ScanResult { groups, total, skipped, cancelled: cancelled.load(Ordering::Relaxed), mode })
+}
+
+type FeatureCache = HashMap<PhotoId, (String, String)>;
+type SceneCache = HashMap<PhotoId, (String, Vec<u8>)>;
+type PreparedPhoto = (Candidate, Option<DynamicImage>, bool, bool);
+
+fn prepare_photo(photo: Photo, preview_dir: &Path, cached: &FeatureCache,
+    cached_scenes: &SceneCache, deep: bool) -> Result<PreparedPhoto, String> {
+    let path = PathBuf::from(&photo.master_dir).join(&photo.master_filename);
+    let preview = preview_dir.join(format!("{}.jpg", photo.id));
+    let (key, file_size) = fingerprint(&path)?;
+    let cached_feature = cached.get(&photo.id).filter(|(old_key, _)| *old_key == key)
+        .and_then(|(_, json)| serde_json::from_str::<Feature>(json).ok())
+        .filter(|f| f.low_detail || preview.exists());
+    let cached_vector = cached_scenes.get(&photo.id).filter(|(old_key, _)| *old_key == key)
+        .and_then(|(_, bytes)| scene_encoder::from_bytes(bytes));
+    let need_feature = cached_feature.is_none();
+    let mut image = if need_feature {
+        // Area-sample once; don't repeatedly convolve the multi-megapixel original.
+        Some(decode(&path)?.thumbnail(1024, 1024))
+    } else { None };
+    let feature = cached_feature.unwrap_or_else(|| describe(image.as_ref().unwrap()));
+    if need_feature && !feature.low_detail {
+        let mut bytes = Vec::new();
+        image::codecs::jpeg::JpegEncoder::new_with_quality(&mut bytes, 88)
+            .encode_image(image.as_ref().unwrap()).map_err(|e| e.to_string())?;
+        std::fs::write(&preview, bytes).map_err(|e| e.to_string())?;
+    }
+    let need_vector = deep && cached_vector.is_none() && !feature.low_detail;
+    if need_vector {
+        // Dedicated unedited preview, never a user-edited library thumbnail.
+        // Use identical JPEG pixels for cold scans and cached-preview scans.
+        image = Some(decode(&preview)?);
+    } else { image = None; }
+    if fingerprint(&path)?.0 != key { return Err("File changed during scan; retry".into()); }
+    Ok((Candidate { item: SimilarPhoto { photo, file_size,
+        preview_path: preview.to_string_lossy().into_owned(), fingerprint: key },
+        feature, embedding: cached_vector }, image, need_feature, need_vector))
 }
 
 fn decode(path: &Path) -> Result<DynamicImage, String> {
@@ -460,10 +492,15 @@ fn group_scene_candidates(candidates: Vec<Candidate>, hash_threshold: u32, scene
     let mut groups: Vec<Vec<usize>> = Vec::new();
     let mut assigned = vec![None; candidates.len()];
     let mut hashes = HashIndex::default();
+    // Approximate search can omit an identical vector when many distances tie. Keep a
+    // direct route for these copies, while retaining HNSW for other scene neighbors.
+    let mut identical_scenes = HashMap::new();
     progress(0);
     for (i, candidate) in candidates.iter().enumerate() {
         if cancelled.load(Ordering::Relaxed) { return Ok(vec![]); }
         let mut possible = hashes.query(candidate.feature.hash, hash_threshold);
+        let scene_key = scene_encoder::to_bytes(&points[i].0);
+        if let Some(group) = identical_scenes.get(&scene_key) { possible.push(*group); }
         if let Some(index) = index.as_ref() {
             for item in index.search(&points[i], &mut search).take(128) {
                 let neighbor = *item.value;
@@ -492,6 +529,7 @@ fn group_scene_candidates(candidates: Vec<Candidate>, hash_threshold: u32, scene
             }
         };
         assigned[i] = Some(group);
+        identical_scenes.insert(scene_key, group);
         if i % 64 == 0 || i + 1 == candidates.len() { progress(i+1); }
     }
     let mut items: Vec<Option<SimilarPhoto>> = candidates.into_iter().map(|c| Some(c.item)).collect();
@@ -502,6 +540,49 @@ fn group_scene_candidates(candidates: Vec<Candidate>, hash_threshold: u32, scene
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    #[ignore = "manual disk/CPU benchmark; generates 24 twelve-megapixel JPEGs"]
+    fn benchmark_cold_and_warm_library_scan() {
+        let temp = std::env::temp_dir().join(format!("picturama-scan-bench-{}-{}", std::process::id(),
+            std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+        std::fs::create_dir_all(&temp).unwrap();
+        let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+        let fixture = image::open(root.join("../submodules/test-data/photos/landscape.jpg")).unwrap()
+            .resize_exact(4000, 3000, FilterType::Triangle).to_rgb8();
+        DynamicImage::ImageRgb8(fixture).save(temp.join("source.jpg")).unwrap();
+        let db = crate::store::db::open(&temp.join("test.db"), &root.join("../migrations")).unwrap();
+        for id in 1..=24 {
+            let filename = format!("{id}.jpg");
+            std::fs::copy(temp.join("source.jpg"), temp.join(&filename)).unwrap();
+            db.lock().unwrap().execute("INSERT INTO photos(id, master_dir, master_filename, master_width, master_height, edited_width, edited_height, date_section, created_at, updated_at, imported_at) VALUES (?1, ?2, ?3, 4000, 3000, 4000, 3000, '2026-01-01', 0, 0, 0)",
+                params![id, temp.to_string_lossy(), filename]).unwrap();
+        }
+        let start = std::time::Instant::now();
+        let cold = scan(&db, &temp, 10, &AtomicBool::new(false), |_,_,_,_|{}).unwrap();
+        let cold_time = start.elapsed();
+        let start = std::time::Instant::now();
+        let warm = scan(&db, &temp, 10, &AtomicBool::new(false), |_,_,_,_|{}).unwrap();
+        let warm_time = start.elapsed();
+        println!("BENCH 24 x 4000x3000 JPEG: cold={:.3}s warm={:.3}s", cold_time.as_secs_f64(), warm_time.as_secs_f64());
+        assert_eq!((cold.total, cold.skipped, cold.groups.len()), (24, 0, 1));
+        assert_eq!(warm.groups[0].photos.len(), 24);
+        if std::env::var_os("PICTURAMA_BENCH_DEEP").is_some() {
+            let mut encoder = SceneEncoder::open(&root.join("models")).unwrap();
+            let start = std::time::Instant::now();
+            let deep = scan_with_encoder(&db, &temp, 10, &AtomicBool::new(false), Some(&mut encoder), 0.85, |_,_,_,_|{}).unwrap();
+            println!("BENCH cold deep: {:.3}s", start.elapsed().as_secs_f64());
+            assert_eq!(deep.groups[0].photos.len(), 24);
+            let start = std::time::Instant::now();
+            scan_with_encoder(&db, &temp, 10, &AtomicBool::new(false), Some(&mut encoder), 0.85, |_,_,_,_|{}).unwrap();
+            println!("BENCH warm deep: {:.3}s", start.elapsed().as_secs_f64());
+        }
+        let preview = image::open(temp.join("thumbnails/similar/1.jpg")).unwrap();
+        assert!(preview.width() <= 1024 && preview.height() <= 1024);
+        drop(db);
+        assert!(temp.starts_with(std::env::temp_dir()) && temp.file_name().unwrap().to_string_lossy().starts_with("picturama-scan-bench-"));
+        std::fs::remove_dir_all(temp).unwrap();
+    }
     #[test]
     fn exact_scan_returns_photo_groups_and_keeps_matches_without_previews() {
         let temp = std::env::temp_dir().join(format!("picturama-exact-test-{}-{}", std::process::id(),

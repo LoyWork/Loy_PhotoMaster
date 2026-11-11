@@ -2,7 +2,7 @@ How to develop Picturama
 ========================
 
 Picturama is a local photo organizer: a Tauri 2 desktop app with a React/Redux web view (`src/app`) and a
-Rust native side (`src-tauri/src`). Nothing is uploaded anywhere — the app makes no network requests at all.
+Rust native side (`src-tauri/src`). Photos and inference stay local. Release builds check GitHub for signed application updates; photos are never sent.
 
 
 Directory structure
@@ -112,6 +112,9 @@ building or running the tests.
 
 
 ### Similar-photo scene matching
+
+See [application updates and scan benchmarks](doc/application-updates.md) for updater signing,
+release setup, and the bounded parallel scan pipeline.
 
 `npm start`, `npm run tauri:dev`, and desktop bundle builds prepare the local DINOv2 assets automatically.
 You can also run `npm run models:prepare` explicitly. The initial Windows x64 download is about 161 MB
@@ -245,10 +248,10 @@ Security
 --------
 
 In a Tauri app the web view is the untrusted side and the command layer is the boundary. Our
-`src-tauri/capabilities/default.json` grants only `core:default` and `core:window:*` — no fs and no shell
+`src-tauri/capabilities/default.json` grants `core:default`, window controls, and the signed updater — no fs and no shell
 plugin — so the frontend can reach the file system only through the commands we write ourselves and through
 the asset protocol. Photo content is not an injection vector: the frontend contains no
-`dangerouslySetInnerHTML`, no `innerHTML` and no `eval`, and it makes no network requests at all, so EXIF and
+`dangerouslySetInnerHTML`, no `innerHTML` and no `eval`, and photo processing makes no network requests, so EXIF and
 XMP strings read from untrusted photos stay inert text. What the two settings below defend against is a
 compromised npm dependency shipping code into the web view.
 

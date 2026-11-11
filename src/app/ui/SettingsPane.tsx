@@ -6,6 +6,7 @@ import { convertFileSrc } from '@tauri-apps/api/core'
 import { FaChevronLeft } from 'react-icons/fa'
 
 import BackgroundClient from 'app/BackgroundClient'
+import updates from 'app/controller/AppUpdateController'
 import { AppearanceSettings, Settings } from 'app/CommonTypes'
 import { showError } from 'app/ErrorPresenter'
 import { msg } from 'app/i18n/i18n'
@@ -224,6 +225,7 @@ export class SettingsPane extends React.Component<Props, State> {
                         <div className='SettingsPane-about'>
                             <span>Picturama</span>
                             <span className='SettingsPane-appVersion'>{props.version}</span>
+                            <Button small icon='refresh' text={msg('Update_check')} onClick={() => void updates.check()}/>
                             <Button
                                 small
                                 text={msg('common_licenses')}

@@ -1,6 +1,6 @@
 [package]
 name = "picturama"
-version = "2.1.1"
+version = "2.2.0"
 edition = "2021"
 
 [workspace]
@@ -81,6 +81,8 @@ tauri-plugin-dialog = "2"
 tauri-plugin-log   = "2"
 # Shell integration (opening items / spawning).
 tauri-plugin-shell = "2"
+# Signed release checks and native installer handoff.
+tauri-plugin-updater = "2"
 # Async runtime. `full` enables all features; needed for the async foreground-RPC oneshot channels and
 # the async command handlers (foreground_client.rs).
 tokio              = { version = "1", features = ["full"] }
@@ -150,3 +152,10 @@ too_many_arguments = "allow"
 needless_range_loop = "allow"
 type_complexity = "allow"
 excessive_precision = "allow"
+
+# JPEG decoding is a hot path even in desktop development.
+[profile.dev.package.zune-jpeg]
+opt-level = 3
+
+[profile.dev.package.zune-core]
+opt-level = 2

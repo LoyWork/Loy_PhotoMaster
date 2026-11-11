@@ -9,7 +9,7 @@ A local photo organizer with date and folder browsing, photo adjustments, and gr
 ## Download
 
 - [Latest release](https://github.com/LoyWork/Loy_Picturama/releases/latest): Windows x64 installers are currently provided.
-- [v2.1.1 Windows installer](https://github.com/LoyWork/Loy_Picturama/releases/download/v2.1.1/Picturama_2.1.1_x64-setup.exe) · [Release notes (Chinese)](doc/releases/v2.1.1.md)
+- [v2.2.0 Windows installer](https://github.com/LoyWork/Loy_Picturama/releases/download/v2.2.0/Picturama_2.2.0_x64-setup.exe) · [Release notes (Chinese)](doc/releases/v2.2.0.md)
 
 The Windows installer bundles DINOv2 and the CPU inference runtime. Installed scans do not download models or upload photos. Deep scanning requires the Microsoft Visual C++ x64 runtime on Windows.
 

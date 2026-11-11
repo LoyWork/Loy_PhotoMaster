@@ -1,6 +1,18 @@
 Changelog
 =========
 
+v2.2.0 - 2026-11-11
+-----------------------
+
+  - Speed up similar-photo scans with bounded parallel preparation, one small source preview,
+    batched cache writes, and preview reuse for deep recognition; default to quick scanning.
+  - Preserve identical scene-vector matches when approximate search encounters distance ties.
+  - Show only Add to favorites and Move to trash as new library actions after multi-selection.
+  - Clear selection, active photo and hover when switching folders or library filters.
+  - Add startup/manual update checks, download progress and signed automatic Windows installation.
+  - Generate signed updater artifacts and latest.json in the release workflow; configure the
+    signing secret before publishing the first updater-enabled release (doc/application-updates.md).
+
 v2.1.0 - 2026-11-10
 -------------------
 

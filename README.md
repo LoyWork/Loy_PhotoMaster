@@ -9,7 +9,7 @@
 ## 下载
 
 - [下载最新版本](https://github.com/LoyWork/Loy_Picturama/releases/latest)：目前提供 Windows x64 安装包。
-- [v2.1.1 Windows 安装包](https://github.com/LoyWork/Loy_Picturama/releases/download/v2.1.1/Picturama_2.1.1_x64-setup.exe) · [更新说明](doc/releases/v2.1.1.md)
+- [v2.2.0 Windows 安装包](https://github.com/LoyWork/Loy_Picturama/releases/download/v2.2.0/Picturama_2.2.0_x64-setup.exe) · [更新说明](doc/releases/v2.2.0.md)
 
 Windows 安装包内置 DINOv2 模型与 CPU 推理组件，安装后扫描无需下载模型，照片和识别过程均留在本机。深度扫描需要 Windows 的 Microsoft Visual C++ x64 运行库。
 

@@ -212,6 +212,7 @@ export class Library extends React.Component<Props, { cleanupView: 'similar' | '
                     isActive={props.isActive}
                     leftItem={props.topBarLeftItem}
                     selectedPhotos={props.selection || props.activePhoto}
+                    hasSelection={!!props.selection && getCollectionSize(props.selection) > 0}
                     isShowingTrash={props.libraryFilterType === 'trash'}
                     isShowingInfo={props.showInfo}
                     photosCount={props.photoCount}

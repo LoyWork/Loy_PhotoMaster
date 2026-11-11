@@ -18,7 +18,25 @@ permissions:
   contents: write
 
 jobs:
+  signing-config:
+    runs-on: ubuntu-latest
+    outputs:
+      ready: ${{ steps.signing.outputs.ready }}
+    steps:
+      - id: signing
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        run: |
+          if [ -n "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::CI signing is not configured. Publish locally signed artifacts; no unsigned update will be built."
+          fi
+
   build-windows:
+    needs: signing-config
+    if: needs.signing-config.outputs.ready == 'true'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -63,10 +81,13 @@ jobs:
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'Picturama ${{ github.ref_name }}'
           releaseBody: 'See the assets to download and install this version.'
           releaseDraft: true
           prerelease: false
+          includeUpdaterJson: true
           args: ''

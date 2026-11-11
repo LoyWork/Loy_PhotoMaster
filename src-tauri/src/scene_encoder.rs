@@ -13,7 +13,7 @@ use crate::app_config_builder::AppConfig;
 
 pub const DIMENSIONS: usize = 384;
 // Include preprocessing and pooling in the cache version, not just the model filename.
-pub const MODEL_VERSION: &str = "dinov2-small-f22797ea-rgb-bicubic256-crop224-cls-l2-v1";
+pub const MODEL_VERSION: &str = "dinov2-small-f22797ea-rgb-bicubic256-crop224-cls-l2-preview1024-v2";
 const MODEL_HASH: &str = "f22797eabf810a75e41de68d378541ebea372122b25c4ce3ef25ff618250c20a";
 const RUNTIME_HASH: &str = "579b636403983254346a5c1d80bd28f1519cd1e284cd204f8d4ff41f8d711559";
 

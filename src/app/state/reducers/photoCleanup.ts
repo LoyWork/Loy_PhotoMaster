@@ -4,7 +4,7 @@ import { CHANGE_PHOTOS, DELETE_PHOTOS, EMPTY_TRASH, UPDATE_PHOTO_CLEANUP } from 
 import { AppState, PhotoCleanupSession } from 'app/state/StateTypes'
 
 const createSession = (exact: boolean): PhotoCleanupSession => ({
-    mode: exact ? 'exact' : 'deep', model: null, sensitivity: 'standard', result: null,
+    mode: exact ? 'exact' : 'quick', model: null, sensitivity: 'standard', result: null,
     selected: new Set(), page: 0, scrollTop: 0, expandedGroups: {}, hadGroups: false, notice: '',
 })
 

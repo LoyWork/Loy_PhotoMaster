@@ -17,6 +17,7 @@ import Library from 'app/ui/library/Library'
 import SelectionSummary from 'app/ui/library/SelectionSummary'
 import ImportProgressButton from 'app/ui/ImportProgressButton'
 import SettingsPane from 'app/ui/SettingsPane'
+import AppUpdateDialog from 'app/ui/AppUpdateDialog'
 import ErrorBoundary from 'app/ui/widget/ErrorBoundary'
 import { openSettingsAction, setShowSidebarAction } from 'app/state/actions'
 import store from 'app/state/store'
@@ -156,6 +157,7 @@ class App extends React.Component<Props> {
                     />
                     {mainView}
                     {modalView}
+                    <AppUpdateDialog/>
                     {props.showWindowsButtons &&
                         <WindowControls
                             className='App-windowControls'

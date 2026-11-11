@@ -48,6 +48,7 @@ export default defineConfig({
         },
     },
     define: {
+        __PICTURAMA_PRODUCTION__: JSON.stringify(process.env.NODE_ENV === 'production'),
         'window.PICTURAMA_DEV_MODE': JSON.stringify(process.env.PICTURAMA_DEV_MODE ?? ''),
         // Absolute path to the test-data photos, injected so the UI Tester can build valid
         // `asset://` URLs (the asset protocol needs an absolute path within an allowed scope).

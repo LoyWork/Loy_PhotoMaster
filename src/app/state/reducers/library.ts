@@ -46,6 +46,8 @@ const filter = (state: PhotoFilter = initialFilterState, action: Action): PhotoF
 
 const activePhoto = (state: PhotoLibraryPosition | null = null, action: Action): PhotoLibraryPosition | null => {
     switch (action.type) {
+        case FETCH_SECTIONS_REQUEST:
+            return action.payload.newFilter ? null : state
         case SET_LIBRARY_ACTIVE_PHOTO:
             return action.payload
         case SET_LIBRARY_SELECTION:
@@ -64,6 +66,8 @@ const activePhoto = (state: PhotoLibraryPosition | null = null, action: Action):
 
 const hoverPhoto = (state: PhotoLibraryPosition | null = null, action: Action): PhotoLibraryPosition | null => {
     switch (action.type) {
+        case FETCH_SECTIONS_REQUEST:
+            return action.payload.newFilter ? null : state
         case SET_LIBRARY_HOVER_PHOTO:
             return action.payload
         default:
@@ -74,6 +78,10 @@ const hoverPhoto = (state: PhotoLibraryPosition | null = null, action: Action): 
 
 const selection = (state: SelectionState | null = null, action: Action): SelectionState | null => {
     switch (action.type) {
+        case FETCH_SECTIONS_REQUEST:
+            // Folder/tag views can share the same date-section IDs. Clear before fetching,
+            // so neither explicit IDs nor a section-wide "all" selection crosses views.
+            return action.payload.newFilter ? null : state
         case FETCH_SECTIONS_SUCCESS:
             if (!state) {
                 return null

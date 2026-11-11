@@ -20,6 +20,7 @@ interface Props {
     isActive: boolean
     leftItem?: MaybeElement
     selectedPhotos: PhotoCollection | null
+    hasSelection: boolean
     isShowingTrash: boolean
     isShowingInfo: boolean
     photosCount: number
@@ -91,6 +92,15 @@ export default class LibraryTopBar extends React.Component<Props, State> {
                     toggleShowInfo={props.toggleShowInfo}
                     toggleShowGrading={props.toggleShowGrading}
                 />
+
+                {props.hasSelection && props.selectedPhotos && <>
+                    <Button minimal icon='star'
+                        text={msg('PhotoActionButtons_addFavorite')}
+                        onClick={() => props.photoActionController.setPhotosFlagged(props.selectedPhotos!, true)}/>
+                    {!props.isShowingTrash && <Button minimal icon='trash'
+                        text={msg('PhotoActionButtons_trash')}
+                        onClick={() => props.photoActionController.movePhotosToTrash(props.selectedPhotos!)}/>}
+                </>}
 
                 <Alert
                     className='LibraryTopBar-emptyTrashAlert'
