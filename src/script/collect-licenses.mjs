@@ -112,7 +112,7 @@ function main() {
 // `UiConfig.version`, and a source link is what the LGPL asks for from *other* people's libraries.
 function collectPicturamaItself(texts) {
     return {
-        name: 'Picturama',
+        name: 'PhotoMaster',
         license: JSON.parse(readFileSync('package.json', 'utf8')).license,
         texts: collectTextsFrom('.', texts),
     }

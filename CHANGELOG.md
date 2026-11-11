@@ -1,6 +1,14 @@
 Changelog
 =========
 
+v2.3.0 - 2026-11-11
+-------------------
+
+  - Rename the application, executable and installer to PhotoMaster.
+  - Replace all app icons with a skeuomorphic leather photo-album design.
+  - Remove the decorative Settings logo and update product names in all seven locales.
+  - Install as a new PhotoMaster app, while retaining the existing library data directory.
+
 v2.2.0 - 2026-11-11
 -----------------------
 

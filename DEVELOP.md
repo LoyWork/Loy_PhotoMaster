@@ -1,7 +1,7 @@
-How to develop Picturama
+How to develop PhotoMaster
 ========================
 
-Picturama is a local photo organizer: a Tauri 2 desktop app with a React/Redux web view (`src/app`) and a
+PhotoMaster is a local photo organizer: a Tauri 2 desktop app with a React/Redux web view (`src/app`) and a
 Rust native side (`src-tauri/src`). Photos and inference stay local. Release builds check GitHub for signed application updates; photos are never sent.
 
 
@@ -101,8 +101,8 @@ TypeScript (Jest, only `src/test-jest/`):
 
 Rust:
 
-    npm run tauri:test                                  # cargo test --bin Picturama
-    cd src-tauri && cargo test --bin Picturama heif     # single test / name filter
+    npm run tauri:test                                  # cargo test --bin PhotoMaster
+    cd src-tauri && cargo test --bin PhotoMaster heif     # single test / name filter
 
 Rust tests live inline as `#[cfg(test)] mod tests` in the source files, not in a separate tree — that is
 where most of the real test coverage is. Several of them read real photos from `submodules/test-data/`, so
@@ -130,7 +130,7 @@ release CI performs these steps in order. Real-model tests are opt-in:
 ```
 npm run models:prepare
 cd src-tauri
-cargo test --bin Picturama -- --include-ignored
+cargo test --bin PhotoMaster -- --include-ignored
 ```
 
 The opt-in tests run actual CPU inference and migrated SQLite deep scans, including warm-cache reuse,

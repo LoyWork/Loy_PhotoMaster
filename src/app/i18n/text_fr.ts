@@ -71,7 +71,7 @@ export default {
     Similar_keepHint: "Conservez une photo par groupe. Effacez la sélection avant de relancer l’analyse.",
     Similar_clear: "Tout conserver",
     Similar_trash: "Mettre à la corbeille",
-    Similar_confirm: "Mettre {0} photos ({1}) dans la corbeille Picturama ? Vous pourrez les restaurer. L’espace sera libéré après avoir vidé la corbeille.",
+    Similar_confirm: "Mettre {0} photos ({1}) dans la corbeille PhotoMaster ? Vous pourrez les restaurer. L’espace sera libéré après avoir vidé la corbeille.",
     Similar_moved: "{0} photos mises à la corbeille. Vous pouvez les restaurer depuis la barre latérale.",
     Similar_pages: "Pages de résultats",
     Similar_previous: "Précédente",
@@ -93,7 +93,7 @@ export default {
     key_backspace: `Retour arrière`,
 
     App_error_noWebGL_title: 'WebGL non supporté.',
-    App_error_noWebGL_desc: `Pour fonctionner, Picturama a besoin d'une carte graphique avec accélération 3D. Veuillez vérifier dans les paramètres du système si vous pouvez activer l'accélération 3D et redémarrer Picturama.`,
+    App_error_noWebGL_desc: `Pour fonctionner, PhotoMaster a besoin d'une carte graphique avec accélération 3D. Veuillez vérifier dans les paramètres du système si vous pouvez activer l'accélération 3D et redémarrer PhotoMaster.`,
     App_toggleSidebar: "Afficher ou masquer le panneau latéral",
 
     CropModeToolbar_aspect_free: 'Libre',
@@ -176,10 +176,10 @@ export default {
     LibraryTopBar_moveToTrash: `Déplacement vers la corbeille du système d'exploitation`,
     LibraryTopBar_emptyTrash: 'Videz la corbeille',
 
-    MainMenu_about: 'À propos de Picturama',
+    MainMenu_about: 'À propos de PhotoMaster',
     MainMenu_settings: 'Paramètres',
     MainMenu_quit: `Quitter`,
-    MainMenu_hide: 'Masquer Picturama',
+    MainMenu_hide: 'Masquer PhotoMaster',
     MainMenu_hideOthers: 'Masquer les autres',
     MainMenu_showAll: 'Tout afficher',
     MainMenu_services: 'Services',
@@ -222,7 +222,7 @@ export default {
     PhotoDetailBody_selected: `Sélectionné`,
     PhotoDetailBody_select: `Sélectionner`,
     PhotoDetailBody_error_loadingFailed: `Le chargement de la photo a echoué`,
-    PhotoDetailBody_error_loadingFailed_desc: `Picturama ne peut pas charger cette photo`,
+    PhotoDetailBody_error_loadingFailed_desc: `PhotoMaster ne peut pas charger cette photo`,
 
     PhotoDetailPane_prevPhoto: 'Photo précédente',
     PhotoDetailPane_nextPhoto: 'Photo suivante',
@@ -247,7 +247,7 @@ export default {
     PhotoInfo_exifTitle_ifd0: 'Image (IFD0)',
     PhotoInfo_exifTitle_ifd1: 'Miniature (IFD1)',
     PhotoInfo_noValue: `La photo n'a pas {0}`,
-    PhotoInfo_segmentNotRead: `Non lu par Picturama`,
+    PhotoInfo_segmentNotRead: `Non lu par PhotoMaster`,
     PhotoInfo_error_fetchPhotoSize: 'Obtention de la taille de la photo échouée',
 
     PhotoActionButtons_colorGrading: 'Étalonnage',
@@ -295,8 +295,8 @@ export default {
     Settings_wallpaperReset: 'Use default background',
     Settings_blurLabel: 'Frosted glass blur: {0} px',
 
-    LicenseDialog_intro: 'Picturama est libre et open source.',
-    LicenseDialog_libraries: `Picturama utilise les bibliothèques suivantes, écrites par d'autres :`,
+    LicenseDialog_intro: 'PhotoMaster est libre et open source.',
+    LicenseDialog_libraries: `PhotoMaster utilise les bibliothèques suivantes, écrites par d'autres :`,
 
     TagEditor_addTag: 'Ajouter un tag...',
     TagEditor_error_tagExists: 'Veuillez saisir un nouveau tag',

@@ -71,7 +71,7 @@ export default {
     Similar_keepHint: "每组至少保留一张。重新扫描前请先清空待删除选择。",
     Similar_clear: "全部保留",
     Similar_trash: "移入垃圾桶",
-    Similar_confirm: "将 {0} 张照片（{1}）移入 Picturama 垃圾桶？可以在垃圾桶中恢复，清空垃圾桶后才会释放磁盘空间。",
+    Similar_confirm: "将 {0} 张照片（{1}）移入 PhotoMaster 垃圾桶？可以在垃圾桶中恢复，清空垃圾桶后才会释放磁盘空间。",
     Similar_moved: "已将 {0} 张照片移入垃圾桶，可从左侧垃圾桶恢复。",
     Similar_pages: "结果分页",
     Similar_previous: "上一张",
@@ -93,7 +93,7 @@ export default {
     key_backspace: `退格键`,
 
     App_error_noWebGL_title: '没有WebGL',
-    App_error_noWebGL_desc: 'Picturama需要有3D加速的图形卡才能运作,请查看系统设置中是否可以激活3D加速并重新启动Picturama',
+    App_error_noWebGL_desc: 'PhotoMaster需要有3D加速的图形卡才能运作,请查看系统设置中是否可以激活3D加速并重新启动PhotoMaster',
     App_toggleSidebar: '显示或隐藏侧栏',
 
     CropModeToolbar_aspect_free: '任意',
@@ -176,10 +176,10 @@ export default {
     LibraryTopBar_moveToTrash: '移动到操作系统的垃圾桶',
     LibraryTopBar_emptyTrash: '清空垃圾桶',
 
-    MainMenu_about: '关于 Picturama',
+    MainMenu_about: '关于 PhotoMaster',
     MainMenu_settings: '设置',
     MainMenu_quit: '退出',
-    MainMenu_hide: '隐藏 Picturama',
+    MainMenu_hide: '隐藏 PhotoMaster',
     MainMenu_hideOthers: '隐藏其他',
     MainMenu_showAll: '全部显示',
     MainMenu_services: '服务',
@@ -222,7 +222,7 @@ export default {
     PhotoDetailBody_selected: `已选中`,
     PhotoDetailBody_select: `选中`,
     PhotoDetailBody_error_loadingFailed: `加载图片失败`,
-    PhotoDetailBody_error_loadingFailed_desc: `Picturama 无法加载这张图片`,
+    PhotoDetailBody_error_loadingFailed_desc: `PhotoMaster 无法加载这张图片`,
 
     PhotoDetailPane_prevPhoto: '上一张照片',
     PhotoDetailPane_nextPhoto: '下一张照片',
@@ -247,7 +247,7 @@ export default {
     PhotoInfo_exifTitle_ifd0: '图像(IFD0)',
     PhotoInfo_exifTitle_ifd1: '缩略图(IFD1)',
     PhotoInfo_noValue: '没有照片{0}',
-    PhotoInfo_segmentNotRead: 'Picturama 未读取',
+    PhotoInfo_segmentNotRead: 'PhotoMaster 未读取',
     PhotoInfo_error_fetchPhotoSize: '获取照片大小失败',
 
     PhotoActionButtons_colorGrading: '调色',
@@ -295,8 +295,8 @@ export default {
     Settings_wallpaperReset: '恢复默认背景',
     Settings_blurLabel: '毛玻璃模糊：{0} px',
 
-    LicenseDialog_intro: 'Picturama 是自由的开源软件。',
-    LicenseDialog_libraries: 'Picturama 使用了以下由他人编写的库：',
+    LicenseDialog_intro: 'PhotoMaster 是自由的开源软件。',
+    LicenseDialog_libraries: 'PhotoMaster 使用了以下由他人编写的库：',
 
     TagEditor_addTag: '添加标签...',
     TagEditor_error_tagExists: '请输入一个新标签',

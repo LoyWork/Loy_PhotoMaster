@@ -71,7 +71,7 @@ export default {
     Similar_keepHint: "Оставьте хотя бы одно фото в группе. Снимите выбор перед новым сканированием.",
     Similar_clear: "Оставить все",
     Similar_trash: "В корзину",
-    Similar_confirm: "Переместить {0} фото ({1}) в корзину Picturama? Их можно восстановить. Место освободится после очистки корзины.",
+    Similar_confirm: "Переместить {0} фото ({1}) в корзину PhotoMaster? Их можно восстановить. Место освободится после очистки корзины.",
     Similar_moved: "В корзину перемещено {0} фото. Их можно восстановить через боковую панель.",
     Similar_pages: "Страницы результатов",
     Similar_previous: "Предыдущее",
@@ -93,7 +93,7 @@ export default {
     key_backspace: 'Backspace',
 
     App_error_noWebGL_title: 'Нет WebGL',
-    App_error_noWebGL_desc: 'Для работы Picturama требуется графическая карта с 3D-ускорением. Пожалуйста, посмотрите в системных настройках, можете ли вы активировать 3D-ускорение и перезапустить Picturama.',
+    App_error_noWebGL_desc: 'Для работы PhotoMaster требуется графическая карта с 3D-ускорением. Пожалуйста, посмотрите в системных настройках, можете ли вы активировать 3D-ускорение и перезапустить PhotoMaster.',
     App_toggleSidebar: "Показать или скрыть боковую панель",
 
     CropModeToolbar_aspect_free: 'Без учета сторон',
@@ -176,10 +176,10 @@ export default {
     LibraryTopBar_moveToTrash: 'Поместить в корзину операционной системы',
     LibraryTopBar_emptyTrash: 'Очистить корзину',
 
-    MainMenu_about: 'О программе Picturama',
+    MainMenu_about: 'О программе PhotoMaster',
     MainMenu_settings: 'Настройки',
     MainMenu_quit: 'Выйти',
-    MainMenu_hide: 'Скрыть Picturama',
+    MainMenu_hide: 'Скрыть PhotoMaster',
     MainMenu_hideOthers: 'Скрыть остальные',
     MainMenu_showAll: 'Показать все',
     MainMenu_services: 'Службы',
@@ -222,7 +222,7 @@ export default {
     PhotoDetailBody_selected: 'Выбрано',
     PhotoDetailBody_select: 'Выбрать',
     PhotoDetailBody_error_loadingFailed: 'Загрузка фото не удалась',
-    PhotoDetailBody_error_loadingFailed_desc: `Picturama не может загрузить это фото`,
+    PhotoDetailBody_error_loadingFailed_desc: `PhotoMaster не может загрузить это фото`,
 
     PhotoDetailPane_prevPhoto: 'Предыдущее фото',
     PhotoDetailPane_nextPhoto: 'Следующее фото',
@@ -247,7 +247,7 @@ export default {
     PhotoInfo_exifTitle_ifd0: 'Изображение (IFD0)',
     PhotoInfo_exifTitle_ifd1: 'Превью (IFD1)',
     PhotoInfo_noValue: 'Данное фото не имеет {0}',
-    PhotoInfo_segmentNotRead: 'Не прочитано программой Picturama',
+    PhotoInfo_segmentNotRead: 'Не прочитано программой PhotoMaster',
     PhotoInfo_error_fetchPhotoSize: 'Не удалось получить размер фотографии',
 
     PhotoActionButtons_colorGrading: 'Цветокоррекция',
@@ -295,8 +295,8 @@ export default {
     Settings_wallpaperReset: 'Use default background',
     Settings_blurLabel: 'Frosted glass blur: {0} px',
 
-    LicenseDialog_intro: 'Picturama — свободное программное обеспечение с открытым исходным кодом.',
-    LicenseDialog_libraries: 'Picturama использует следующие библиотеки других авторов:',
+    LicenseDialog_intro: 'PhotoMaster — свободное программное обеспечение с открытым исходным кодом.',
+    LicenseDialog_libraries: 'PhotoMaster использует следующие библиотеки других авторов:',
 
     TagEditor_addTag: 'Добавить тег...',
     TagEditor_error_tagExists: 'Введите новый тег',

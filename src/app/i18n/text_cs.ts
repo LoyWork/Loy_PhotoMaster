@@ -71,7 +71,7 @@ export default {
     Similar_keepHint: "V každé skupině ponechte alespoň jednu fotografii. Před dalším hledáním zrušte výběr.",
     Similar_clear: "Ponechat vše",
     Similar_trash: "Přesunout do koše",
-    Similar_confirm: "Přesunout {0} fotografií ({1}) do koše Picturama? Lze je obnovit. Místo se uvolní po vysypání koše.",
+    Similar_confirm: "Přesunout {0} fotografií ({1}) do koše PhotoMaster? Lze je obnovit. Místo se uvolní po vysypání koše.",
     Similar_moved: "Do koše přesunuto {0} fotografií. Lze je obnovit z postranního panelu.",
     Similar_pages: "Stránky výsledků",
     Similar_previous: "Předchozí",
@@ -93,7 +93,7 @@ export default {
     key_backspace: 'Backspace',
 
     App_error_noWebGL_title: 'Žádné WebGL',
-    App_error_noWebGL_desc: 'Picturama vyžaduje grafickou kartu s 3D akcelerací. Podívejte se prosím do systémových nastavení, zda je možné aktivovat 3D akceleraci a restartujte Picturama.',
+    App_error_noWebGL_desc: 'PhotoMaster vyžaduje grafickou kartu s 3D akcelerací. Podívejte se prosím do systémových nastavení, zda je možné aktivovat 3D akceleraci a restartujte PhotoMaster.',
     App_toggleSidebar: "Zobrazit nebo skrýt postranní panel",
 
     CropModeToolbar_aspect_free: 'Zdarma',
@@ -176,10 +176,10 @@ export default {
     LibraryTopBar_moveToTrash: 'Přesunout do koše operačního systému',
     LibraryTopBar_emptyTrash: 'Vysypat koš',
 
-    MainMenu_about: 'O Picturama',
+    MainMenu_about: 'O PhotoMaster',
     MainMenu_settings: 'Nastavení',
     MainMenu_quit: 'Konec',
-    MainMenu_hide: 'Skrýt Picturama',
+    MainMenu_hide: 'Skrýt PhotoMaster',
     MainMenu_hideOthers: 'Skrýt ostatní',
     MainMenu_showAll: 'Zobrazit vše',
     MainMenu_services: 'Služby',
@@ -222,7 +222,7 @@ export default {
     PhotoDetailBody_selected: 'Vybráno',
     PhotoDetailBody_select: 'Vybrat',
     PhotoDetailBody_error_loadingFailed: 'Načtení fotografie selhalo',
-    PhotoDetailBody_error_loadingFailed_desc: 'Picturama nemůže načíst tuto fotografii',
+    PhotoDetailBody_error_loadingFailed_desc: 'PhotoMaster nemůže načíst tuto fotografii',
 
     PhotoDetailPane_prevPhoto: 'Předchozí fotografie',
     PhotoDetailPane_nextPhoto: 'Následující fotografie',
@@ -247,7 +247,7 @@ export default {
     PhotoInfo_exifTitle_ifd0: 'Obrázek (IFD0)',
     PhotoInfo_exifTitle_ifd1: 'Náhled (IFD1)',
     PhotoInfo_noValue: 'Fotografie nemá žádné {0}',
-    PhotoInfo_segmentNotRead: 'Aplikace Picturama nečte',
+    PhotoInfo_segmentNotRead: 'Aplikace PhotoMaster nečte',
     PhotoInfo_error_fetchPhotoSize: 'Zjištění velikosti fotografie selhalo',
 
     PhotoActionButtons_colorGrading: 'Barevná korekce',
@@ -295,8 +295,8 @@ export default {
     Settings_wallpaperReset: 'Use default background',
     Settings_blurLabel: 'Frosted glass blur: {0} px',
 
-    LicenseDialog_intro: 'Picturama je svobodný a otevřený software.',
-    LicenseDialog_libraries: 'Picturama používá následující knihovny od jiných autorů:',
+    LicenseDialog_intro: 'PhotoMaster je svobodný a otevřený software.',
+    LicenseDialog_libraries: 'PhotoMaster používá následující knihovny od jiných autorů:',
 
     TagEditor_addTag: 'Přidat štítek...',
     TagEditor_error_tagExists: 'Zadejte prosím nový štítek',

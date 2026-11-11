@@ -13,7 +13,6 @@ import { msg } from 'app/i18n/i18n'
 import LicenseDialog from 'app/ui/license/LicenseDialog'
 import Toolbar from 'app/ui/widget/Toolbar'
 import List from 'app/ui/widget/List'
-import LogoDecoration from 'app/ui/widget/LogoDecoration'
 import { setSettingsAction, closeSettingsAction } from 'app/state/actions'
 import { AppState } from 'app/state/StateTypes'
 import { bindMany } from 'app/util/LangUtil'
@@ -57,7 +56,7 @@ export class SettingsPane extends React.Component<Props, State> {
         this.state = {
             showLicenses: false,
         }
-        bindMany(this, 'onPhotoDirsChange', 'onAddPhotoDir', 'onClose', 'onCloseAndImport', 'getDecorationWidth',
+        bindMany(this, 'onPhotoDirsChange', 'onAddPhotoDir', 'onClose', 'onCloseAndImport',
             'onShowLicenses', 'onLicensesClosed', 'onChooseWallpaper', 'onResetWallpaper')
     }
 
@@ -127,16 +126,11 @@ export class SettingsPane extends React.Component<Props, State> {
         this.changeAppearance({ blurStrength: (value === defaultBlurStrength) ? undefined : value })
     }
 
-    private getDecorationWidth(containerWidth: number): number {
-        return containerWidth - 800
-    }
-
     render() {
         const { props, state } = this
         const { settings } = props
         return (
             <div className={classnames(props.className, 'SettingsPane')} style={props.style}>
-                <LogoDecoration getDecorationWidth={this.getDecorationWidth}/>
                 <Toolbar
                     className="SettingsPane-topBar"
                     isTopBar={true}
@@ -190,7 +184,7 @@ export class SettingsPane extends React.Component<Props, State> {
                                     ? { backgroundImage: `url("${convertFileSrc(this.appearance.wallpaperPath)}")` }
                                     : undefined}>
                                 {!this.appearance.wallpaperPath &&
-                                    <span className='SettingsPane-wallpaperPreviewDefault'>Picturama</span>
+                                    <span className='SettingsPane-wallpaperPreviewDefault'>PhotoMaster</span>
                                 }
                             </div>
                             <div className='SettingsPane-wallpaperActions'>
@@ -223,7 +217,7 @@ export class SettingsPane extends React.Component<Props, State> {
                             </div>
                         </section>
                         <div className='SettingsPane-about'>
-                            <span>Picturama</span>
+                            <span>PhotoMaster</span>
                             <span className='SettingsPane-appVersion'>{props.version}</span>
                             <Button small icon='refresh' text={msg('Update_check')} onClick={() => void updates.check()}/>
                             <Button

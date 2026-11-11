@@ -21,9 +21,9 @@ import './entry.less'
 
 
 if ((window as any).PICTURAMA_DEV_MODE) {
-    document.title = 'Picturama - DEV MODE'
+    document.title = 'PhotoMaster - DEV MODE'
 } else {
-    document.title = `Picturama - ${pkgs.version}`
+    document.title = `PhotoMaster - ${pkgs.version}`
 }
 
 Promise

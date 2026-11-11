@@ -49,11 +49,11 @@ pub fn build(app: &AppHandle, i18n: &I18n) -> tauri::Result<Menu<tauri::Wry>> {
             Some(&i18n.msg("MainMenu_about")),
             Some(
                 AboutMetadataBuilder::new()
-                    .name(Some("Picturama"))
+                    .name(Some("PhotoMaster"))
                     .version(Some(env!("CARGO_PKG_VERSION")))
                     .authors(Some(vec!["The Picturama contributors".to_string()]))
                     .license(Some("MIT"))
-                    .website(Some("https://picturama.github.io"))
+                    .website(Some("https://github.com/LoyWork/Loy_Picturama"))
                     .build(),
             ),
         )?)

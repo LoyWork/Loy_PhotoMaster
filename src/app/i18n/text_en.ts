@@ -71,7 +71,7 @@ export default {
     Similar_keepHint: "Keep at least one photo per group. Clear the selection before scanning again.",
     Similar_clear: "Keep all",
     Similar_trash: "Move to trash",
-    Similar_confirm: "Move {0} photos ({1}) to the Picturama trash? They can be restored there. Disk space is freed after emptying the trash.",
+    Similar_confirm: "Move {0} photos ({1}) to the PhotoMaster trash? They can be restored there. Disk space is freed after emptying the trash.",
     Similar_moved: "Moved {0} photos to trash. You can restore them from the sidebar.",
     Similar_pages: "Result pages",
     Similar_previous: "Previous",
@@ -93,7 +93,7 @@ export default {
     key_backspace: 'Backspace',
 
     App_error_noWebGL_title: 'No WebGL',
-    App_error_noWebGL_desc: 'Picturama needs a graphic card with 3D acceleration in order to function. Please have a look in the system settings whether you can activate 3D acceleration and restart Picturama.',
+    App_error_noWebGL_desc: 'PhotoMaster needs a graphic card with 3D acceleration in order to function. Please have a look in the system settings whether you can activate 3D acceleration and restart PhotoMaster.',
     App_toggleSidebar: 'Show or hide the sidebar',
 
     CropModeToolbar_aspect_free: 'Free',
@@ -176,10 +176,10 @@ export default {
     LibraryTopBar_moveToTrash: 'Move to trash of operating system',
     LibraryTopBar_emptyTrash: 'Empty trash',
 
-    MainMenu_about: 'About Picturama',
+    MainMenu_about: 'About PhotoMaster',
     MainMenu_settings: 'Settings',
     MainMenu_quit: 'Quit',
-    MainMenu_hide: 'Hide Picturama',
+    MainMenu_hide: 'Hide PhotoMaster',
     MainMenu_hideOthers: 'Hide Others',
     MainMenu_showAll: 'Show All',
     MainMenu_services: 'Services',
@@ -222,7 +222,7 @@ export default {
     PhotoDetailBody_selected: 'Selected',
     PhotoDetailBody_select: 'Select',
     PhotoDetailBody_error_loadingFailed: 'Loading photo failed',
-    PhotoDetailBody_error_loadingFailed_desc: `Picturama can't load this photo`,
+    PhotoDetailBody_error_loadingFailed_desc: `PhotoMaster can't load this photo`,
 
     PhotoDetailPane_prevPhoto: 'Previous photo',
     PhotoDetailPane_nextPhoto: 'Next photo',
@@ -247,7 +247,7 @@ export default {
     PhotoInfo_exifTitle_ifd0: 'Image (IFD0)',
     PhotoInfo_exifTitle_ifd1: 'Thumbnail (IFD1)',
     PhotoInfo_noValue: 'Photo has no {0}',
-    PhotoInfo_segmentNotRead: 'Not read by Picturama',
+    PhotoInfo_segmentNotRead: 'Not read by PhotoMaster',
     PhotoInfo_error_fetchPhotoSize: 'Getting photo size failed',
 
     PhotoActionButtons_colorGrading: 'Color grading',
@@ -295,8 +295,8 @@ export default {
     Settings_wallpaperReset: 'Use default background',
     Settings_blurLabel: 'Frosted glass blur: {0} px',
 
-    LicenseDialog_intro: 'Picturama is free and open source.',
-    LicenseDialog_libraries: 'Picturama uses the following libraries written by others:',
+    LicenseDialog_intro: 'PhotoMaster is free and open source.',
+    LicenseDialog_libraries: 'PhotoMaster uses the following libraries written by others:',
 
     TagEditor_addTag: 'Add tag...',
     TagEditor_error_tagExists: 'Please enter a new tag',

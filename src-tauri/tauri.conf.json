@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Picturama",
-  "version": "2.2.0",
-  "identifier": "io.github.picturama",
+  "productName": "PhotoMaster",
+  "version": "2.3.0",
+  "identifier": "io.github.photomaster",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:3030",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Picturama",
+        "title": "PhotoMaster",
         "backgroundColor": "#1e1e1e",
         "width": 1280,
         "height": 800,
@@ -61,7 +61,13 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "createUpdaterArtifacts": true
+    "createUpdaterArtifacts": true,
+    "windows": {
+      "nsis": {
+        "installerIcon": "icons/icon.ico",
+        "uninstallerIcon": "icons/icon.ico"
+      }
+    }
   },
   "plugins": {
     "updater": {
@@ -73,5 +79,6 @@
         "installMode": "passive"
       }
     }
-  }
+  },
+  "mainBinaryName": "PhotoMaster"
 }

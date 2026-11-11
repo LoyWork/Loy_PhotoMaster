@@ -42,10 +42,10 @@ CI 使用 `createUpdaterArtifacts: true` 生成签名安装包，`tauri-action` 
 
 ```powershell
 cd src-tauri
-cargo test --bin Picturama benchmark_cold_and_warm_library_scan -- --ignored --nocapture
+cargo test --bin PhotoMaster benchmark_cold_and_warm_library_scan -- --ignored --nocapture
 # 已准备模型时，可额外测深度路径：
 $env:PICTURAMA_BENCH_DEEP = '1'
-cargo test --bin Picturama benchmark_cold_and_warm_library_scan -- --ignored --nocapture
+cargo test --bin PhotoMaster benchmark_cold_and_warm_library_scan -- --ignored --nocapture
 ```
 
 编译环境需要按 DEVELOP.md 设置 vcpkg 和静态 CRT。测试生成临时 JPEG 与数据库，完成后清理自己的临时目录。

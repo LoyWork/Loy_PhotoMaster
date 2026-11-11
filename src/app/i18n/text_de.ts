@@ -71,7 +71,7 @@ export default {
     Similar_keepHint: "Mindestens ein Foto pro Gruppe behalten. Vor erneutem Scan die Auswahl aufheben.",
     Similar_clear: "Alle behalten",
     Similar_trash: "In den Papierkorb",
-    Similar_confirm: "{0} Fotos ({1}) in den Picturama-Papierkorb verschieben? Sie lassen sich dort wiederherstellen. Speicher wird nach dem Leeren freigegeben.",
+    Similar_confirm: "{0} Fotos ({1}) in den PhotoMaster-Papierkorb verschieben? Sie lassen sich dort wiederherstellen. Speicher wird nach dem Leeren freigegeben.",
     Similar_moved: "{0} Fotos in den Papierkorb verschoben. Dort lassen sie sich wiederherstellen.",
     Similar_pages: "Ergebnisseiten",
     Similar_previous: "Zurück",
@@ -93,7 +93,7 @@ export default {
     key_backspace: 'Rücktaste',
 
     App_error_noWebGL_title: 'Kein WebGL',
-    App_error_noWebGL_desc: 'Picturama benötigt eine Grafikkarte mit 3D-Beschleunigung um zu funktionieren. Bitte schaue in den System-Einstellungen, ob Du 3D-Beschleunigung aktivieren kannst und starte Picturama dann neu.',
+    App_error_noWebGL_desc: 'PhotoMaster benötigt eine Grafikkarte mit 3D-Beschleunigung um zu funktionieren. Bitte schaue in den System-Einstellungen, ob Du 3D-Beschleunigung aktivieren kannst und starte PhotoMaster dann neu.',
     App_toggleSidebar: "Seitenleiste ein- oder ausblenden",
 
     CropModeToolbar_aspect_free: 'Frei',
@@ -176,10 +176,10 @@ export default {
     LibraryTopBar_moveToTrash: 'In Betriebsystem-Papierkorb verschieben',
     LibraryTopBar_emptyTrash: 'Papierkorb leeren',
 
-    MainMenu_about: 'Über Picturama',
+    MainMenu_about: 'Über PhotoMaster',
     MainMenu_settings: 'Einstellungen',
     MainMenu_quit: `Beenden`,
-    MainMenu_hide: 'Picturama ausblenden',
+    MainMenu_hide: 'PhotoMaster ausblenden',
     MainMenu_hideOthers: 'Andere ausblenden',
     MainMenu_showAll: 'Alle einblenden',
     MainMenu_services: 'Dienste',
@@ -222,7 +222,7 @@ export default {
     PhotoDetailBody_selected: 'Ausgewählt',
     PhotoDetailBody_select: 'Auswählen',
     PhotoDetailBody_error_loadingFailed: 'Konnte Foto nicht laden',
-    PhotoDetailBody_error_loadingFailed_desc: 'Picturama kann dieses Foto nicht laden.',
+    PhotoDetailBody_error_loadingFailed_desc: 'PhotoMaster kann dieses Foto nicht laden.',
 
     PhotoDetailPane_prevPhoto: 'Vorheriges Foto',
     PhotoDetailPane_nextPhoto: 'Nächstes Foto',
@@ -247,7 +247,7 @@ export default {
     PhotoInfo_exifTitle_ifd0: 'Bild (IFD0)',
     PhotoInfo_exifTitle_ifd1: 'Vorschaubild (IFD1)',
     PhotoInfo_noValue: 'Foto hat kein {0}',
-    PhotoInfo_segmentNotRead: 'Wird von Picturama nicht ausgelesen',
+    PhotoInfo_segmentNotRead: 'Wird von PhotoMaster nicht ausgelesen',
     PhotoInfo_error_fetchPhotoSize: 'Fotogröße konnte nicht ermittelt werden',
 
     PhotoActionButtons_colorGrading: 'Farbkorrektur',
@@ -295,8 +295,8 @@ export default {
     Settings_wallpaperReset: 'Standardhintergrund verwenden',
     Settings_blurLabel: 'Mattglas-Unschärfe: {0} px',
 
-    LicenseDialog_intro: 'Picturama ist frei und Open Source.',
-    LicenseDialog_libraries: 'Picturama verwendet folgende Bibliotheken anderer Autoren:',
+    LicenseDialog_intro: 'PhotoMaster ist frei und Open Source.',
+    LicenseDialog_libraries: 'PhotoMaster verwendet folgende Bibliotheken anderer Autoren:',
 
     TagEditor_addTag: 'Schlagwort hinzufügen...',
     TagEditor_error_tagExists: 'Bitte neues Schlagwort eingeben',

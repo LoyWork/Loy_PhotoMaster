@@ -1,6 +1,6 @@
 {
-  "name": "picturama",
-  "version": "2.2.0",
+  "name": "photomaster",
+  "version": "2.3.0",
   "description": "Digital image organizer powered by the web",
   "author": "Til Schneider <github@murfman.de>, Loïc Nogues <nogues.loic@gmail.com>",
   "license": "MIT",
@@ -19,7 +19,7 @@
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
-    "tauri:test": "cd src-tauri && cargo test --bin Picturama",
+    "tauri:test": "cd src-tauri && cargo test --bin PhotoMaster",
     "test": "jest",
     "test:watch": "jest --watch"
   },
@@ -60,5 +60,5 @@
     "typescript": "~6.0.3",
     "vite": "^8.1.4"
   },
-  "repository": "https://github.com/picturama/picturama.git"
+  "repository": "https://github.com/LoyWork/Loy_Picturama.git"
 }

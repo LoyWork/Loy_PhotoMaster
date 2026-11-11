@@ -1,6 +1,6 @@
 **English** | [简体中文](README.md)
 
-# Picturama (Loy fork)
+# PhotoMaster
 
 A local photo organizer with date and folder browsing, photo adjustments, and grouped cleanup of similar and identical photos.
 
@@ -9,7 +9,7 @@ A local photo organizer with date and folder browsing, photo adjustments, and gr
 ## Download
 
 - [Latest release](https://github.com/LoyWork/Loy_Picturama/releases/latest): Windows x64 installers are currently provided.
-- [v2.2.0 Windows installer](https://github.com/LoyWork/Loy_Picturama/releases/download/v2.2.0/Picturama_2.2.0_x64-setup.exe) · [Release notes (Chinese)](doc/releases/v2.2.0.md)
+- [v2.3.0 Windows installer](https://github.com/LoyWork/Loy_Picturama/releases/download/v2.3.0/PhotoMaster_2.3.0_x64-setup.exe) · [Release notes (Chinese)](doc/releases/v2.3.0.md)
 
 The Windows installer bundles DINOv2 and the CPU inference runtime. Installed scans do not download models or upload photos. Deep scanning requires the Microsoft Visual C++ x64 runtime on Windows.
 
