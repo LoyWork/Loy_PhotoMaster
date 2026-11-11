@@ -6,7 +6,7 @@
 
 ## 发布方式
 
-本次 v2.2.0 使用本机构建与签名，再上传安装包、公开签名和更新清单；私钥保留本机。GitHub Actions 的签名 Secret 尚未配置，下面的 CI 配置用于后续授权接入。
+正式版本由 GitHub Actions 构建、签名并上传发布草稿。仓库的 `TAURI_SIGNING_PRIVATE_KEY` 已配置；Actions 只公开安装包、签名和更新清单，私钥不进入 Git 或 Release。
 
 ## CI 发布前一次性配置
 
