@@ -11,4 +11,3 @@ Materials and lighting: finely grained rich dark teal leather, restrained emboss
 Style: realistic 3D skeuomorphic object-icon with slight idealization, classic early iOS polish; no modern flat vector styling. Readable strong silhouette at 32x32 and 16x16.
 Constraints: transparent alpha outside the album silhouette, no rectangular backdrop, no external drop shadow. No camera, no lenses, no shutter controls, no camera-body shapes. No text, no letters, no book title, no branding, no watermark, no mockup, no extra variants.
 ```
-
