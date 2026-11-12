@@ -408,15 +408,15 @@ pub fn delete_photos(db: &DbHandle, photo_ids: &[PhotoId]) -> Result<(), String>
         .map(|id| id.to_string())
         .collect::<Vec<_>>()
         .join(",");
-    let conn = db.lock().unwrap();
-    conn.execute_batch(&format!(
-        "BEGIN;
-         DELETE FROM photos_tags WHERE photo_id IN ({ids_csv});
+    let mut conn = db.lock().unwrap();
+    let transaction = conn.transaction().map_err(|e| e.to_string())?;
+    transaction.execute_batch(&format!(
+        "DELETE FROM photos_tags WHERE photo_id IN ({ids_csv});
          DELETE FROM versions     WHERE photo_id IN ({ids_csv});
-         DELETE FROM photos       WHERE id       IN ({ids_csv});
-         COMMIT;"
+         DELETE FROM photos       WHERE id       IN ({ids_csv});"
     ))
     .map_err(|e| e.to_string())?;
+    transaction.commit().map_err(|e| e.to_string())?;
 
     // The deleted photos may have had tags
     crate::store::tag_store::mark_tags_deleted();
@@ -641,6 +641,27 @@ fn json_to_sql_value(v: &serde_json::Value) -> Value {
 mod tests {
 
     use super::*;
+
+    #[test]
+    fn failed_photo_deletion_rolls_back_and_allows_retry() {
+        let conn = rusqlite::Connection::open_in_memory().unwrap();
+        conn.execute_batch("CREATE TABLE photos (id INTEGER PRIMARY KEY);
+            CREATE TABLE photos_tags (photo_id INTEGER);
+            CREATE TABLE versions (photo_id INTEGER);
+            INSERT INTO photos VALUES (1);
+            INSERT INTO photos_tags VALUES (1);
+            CREATE TRIGGER fail_delete BEFORE DELETE ON photos BEGIN SELECT RAISE(ABORT, 'test failure'); END;").unwrap();
+        let db: DbHandle = std::sync::Arc::new(std::sync::Mutex::new(conn));
+        assert!(delete_photos(&db, &[1]).is_err());
+        {
+            let conn = db.lock().unwrap();
+            assert!(conn.is_autocommit());
+            assert_eq!(conn.query_row("SELECT COUNT(*) FROM photos_tags", [], |row| row.get::<_, i64>(0)).unwrap(), 1);
+            conn.execute_batch("DROP TRIGGER fail_delete").unwrap();
+        }
+        delete_photos(&db, &[1]).unwrap();
+        assert_eq!(db.lock().unwrap().query_row("SELECT COUNT(*) FROM photos", [], |row| row.get::<_, i64>(0)).unwrap(), 0);
+    }
 
     fn filter(filter_type: PhotoFilterType, folder: Option<&str>, photo_roots: &[&str]) -> PhotoFilter {
         PhotoFilter {

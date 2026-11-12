@@ -46,6 +46,8 @@ const filter = (state: PhotoFilter = initialFilterState, action: Action): PhotoF
 
 const activePhoto = (state: PhotoLibraryPosition | null = null, action: Action): PhotoLibraryPosition | null => {
     switch (action.type) {
+        case EMPTY_TRASH:
+            return state && action.payload.trashedPhotoIds.includes(state.photoId) ? null : state
         case FETCH_SECTIONS_REQUEST:
             return action.payload.newFilter ? null : state
         case SET_LIBRARY_ACTIVE_PHOTO:
@@ -66,6 +68,8 @@ const activePhoto = (state: PhotoLibraryPosition | null = null, action: Action):
 
 const hoverPhoto = (state: PhotoLibraryPosition | null = null, action: Action): PhotoLibraryPosition | null => {
     switch (action.type) {
+        case EMPTY_TRASH:
+            return state && action.payload.trashedPhotoIds.includes(state.photoId) ? null : state
         case FETCH_SECTIONS_REQUEST:
             return action.payload.newFilter ? null : state
         case SET_LIBRARY_HOVER_PHOTO:

@@ -52,3 +52,16 @@ test('metadata edits update cached photos while unrelated changes preserve the c
     expect([...after.similar.selected]).toEqual([2, 3, 5])
     expect(result.groups[0].photos[0].photo.flag).toBe(false)
 })
+
+test('explicit whole-group selection survives metadata edits and partial removal', () => {
+    const before = photoCleanup(initial(), updatePhotoCleanupAction('similar', {
+        selected: new Set([id(1), id(2), id(3), id(5)]),
+    }))
+    const edited = photoCleanup(before, changePhotosAction([{ id: id(1) }] as Photo[], { flag: true }))
+    expect([...edited.similar.selected]).toEqual([1, 2, 3, 5])
+    const partial = photoCleanup(edited, deletePhotosAction([id(1)]))
+    expect([...partial.similar.selected]).toEqual([2, 3, 5])
+    const trashed = photoCleanup(partial, changePhotosAction([{ id: id(2) }, { id: id(3) }] as Photo[], { trashed: true }))
+    expect(trashed.similar.result!.groups.map(group => group.photos.map(item => item.photo.id))).toEqual([[4, 5]])
+    expect([...trashed.similar.selected]).toEqual([5])
+})

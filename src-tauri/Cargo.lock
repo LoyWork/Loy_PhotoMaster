@@ -3422,7 +3422,7 @@ dependencies = [
 
 [[package]]
 name = "picturama"
-version = "2.3.0"
+version = "2.3.1"
 dependencies = [
  "chrono",
  "dirs 5.0.1",

@@ -186,37 +186,69 @@ pub async fn empty_trash(
     app_config: State<'_, AppConfig>,
     db: State<'_, DbHandle>,
 ) -> Result<EmptyTrashResult, String> {
-    // Fetch photos to delete
-    let trashed = tokio::task::block_in_place(|| photo_store::fetch_trashed_photos(&db))?;
-    let photo_ids: Vec<PhotoId> = trashed.iter().map(|p| p.id).collect();
+    tokio::task::block_in_place(|| empty_trash_impl(&app_config.picturama_home_dir, &db))
+}
 
-    // Delete from DB
-    tokio::task::block_in_place(|| photo_store::delete_photos(&db, &photo_ids))?;
+fn trash_master_file(path: &Path, recycle: impl FnOnce(&Path) -> Result<(), String>) -> Result<(), String> {
+    match std::fs::symlink_metadata(path) {
+        Ok(metadata) if metadata.file_type().is_dir() => return Err("Photo path is a directory".into()),
+        Ok(_) => {},
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            // A missing file in an accessible folder is already gone. An unavailable drive
+            // or share must remain in the application trash so it can be retried later.
+            match path.parent().map(std::fs::metadata) {
+                Some(Ok(parent)) if parent.is_dir() => return Ok(()),
+                _ => return Err(format!("Photo folder is unavailable: {}", e)),
+            }
+        },
+        Err(e) => return Err(e.to_string()),
+    }
+    recycle(path)
+}
 
-    // Move master files to system trash
+fn empty_trash_impl(home: &Path, db: &DbHandle) -> Result<EmptyTrashResult, String> {
+    empty_trash_with(home, db, |path| trash::delete(path).map_err(|e| e.to_string()))
+}
+
+fn empty_trash_with(home: &Path, db: &DbHandle, mut recycle: impl FnMut(&Path) -> Result<(), String>) -> Result<EmptyTrashResult, String> {
+    let trashed = photo_store::fetch_trashed_photos(db)
+        .map_err(|e| format!("Could not read application trash: {}", e))?;
+    let mut photo_ids = Vec::new();
+    let mut failed = Vec::new();
     for photo in &trashed {
-        let master_path = format!("{}/{}", photo.master_dir, photo.master_filename);
-        // Use trash crate (added to Cargo.toml) or fall back to std::fs::remove_file
-        if let Err(e) = trash::delete(&master_path) {
-            log::warn!("Could not move {} to trash: {}", master_path, e);
+        let master_path = Path::new(&photo.master_dir).join(&photo.master_filename);
+        if let Err(e) = trash_master_file(&master_path, &mut recycle) {
+            let detail = format!("{}: {}", master_path.display(), e);
+            log::warn!("Could not empty trash: {}", detail);
+            failed.push(detail);
+            continue;
         }
+        // Commit each completed file before proceeding. Failures stay available for retry.
+        if let Err(e) = photo_store::delete_photos(db, &[photo.id]) {
+            failed.push(format!("{}: Could not remove library record: {}", master_path.display(), e));
+            continue;
+        }
+        photo_ids.push(photo.id);
         // Remove PhotoWork sidecar (write empty work = removes the file)
         let _ = photo_work_store::remove_photo_work(
             Path::new(&photo.master_dir),
             &photo.master_filename,
         );
         // Remove the cached thumbnail, so a re-imported photo is rendered again
-        let _ = thumbnail_store::delete_thumbnail(&app_config.picturama_home_dir, photo.id);
+        let _ = thumbnail_store::delete_thumbnail(home, photo.id);
     }
 
     // Re-fetch tags in case tag references changed
     let updated_tags = if !photo_ids.is_empty() {
-        Some(tokio::task::block_in_place(|| tag_store::fetch_tags(&db))?)
+        match tag_store::fetch_tags(db) {
+            Ok(tags) => Some(tags),
+            Err(e) => { failed.push(format!("Could not refresh tags: {}", e)); None },
+        }
     } else {
         None
     };
 
-    Ok(EmptyTrashResult { photo_ids, updated_tags })
+    Ok(EmptyTrashResult { photo_ids, updated_tags, failed })
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -322,6 +354,42 @@ mod duplicate_tests {
         fn drop(&mut self) {
             let _ = std::fs::remove_dir_all(&self.0);
         }
+    }
+
+    #[test]
+    fn trash_missing_files_requires_accessible_parent_and_never_recycles_directories() {
+        let dir = TempDir::new();
+        assert!(trash_master_file(&dir.0.join("missing.jpg"), |_| panic!("missing file must not be recycled")).is_ok());
+        assert!(trash_master_file(&dir.0.join("unavailable/missing.jpg"), |_| panic!("unavailable folder")).is_err());
+        assert!(trash_master_file(&dir.0, |_| panic!("must not recycle a directory")).is_err());
+        let file = dir.0.join("photo.jpg");
+        std::fs::write(&file, b"original").unwrap();
+        assert_eq!(trash_master_file(&file, |_| Err("access denied".into())).unwrap_err(), "access denied");
+        assert_eq!(std::fs::read(&file).unwrap(), b"original");
+    }
+
+    #[test]
+    fn empty_trash_preserves_failed_files_and_retries_successfully() {
+        let dir = TempDir::new();
+        let db = crate::store::db::open(&dir.0.join("library.db"), &Path::new(env!("CARGO_MANIFEST_DIR")).join("../migrations")).unwrap();
+        for (id, filename) in [(1, "ok.jpg"), (2, "locked.jpg"), (3, "missing.jpg")] {
+            if id != 3 { std::fs::write(dir.0.join(filename), b"original").unwrap(); }
+            db.lock().unwrap().execute("INSERT INTO photos(id,master_dir,master_filename,master_width,master_height,edited_width,edited_height,date_section,created_at,updated_at,imported_at,trashed) VALUES (?1,?2,?3,24,24,24,24,'2026-01-01',0,0,0,1)",
+                rusqlite::params![id, dir.0.to_str().unwrap(), filename]).unwrap();
+        }
+        let result = empty_trash_with(&dir.0, &db, |path| {
+            if path.ends_with("locked.jpg") { Err("access denied".into()) }
+            else { std::fs::remove_file(path).map_err(|e| e.to_string()) }
+        }).unwrap();
+        assert_eq!(result.photo_ids, vec![1, 3]);
+        assert_eq!(result.failed.len(), 1);
+        assert!(result.failed[0].contains("locked.jpg"));
+        assert_eq!(photo_store::fetch_trashed_photos(&db).unwrap().iter().map(|p| p.id).collect::<Vec<_>>(), vec![2]);
+        assert!(dir.0.join("locked.jpg").exists());
+        let retry = empty_trash_with(&dir.0, &db, |path| std::fs::remove_file(path).map_err(|e| e.to_string())).unwrap();
+        assert_eq!(retry.photo_ids, vec![2]);
+        assert!(retry.failed.is_empty());
+        assert!(photo_store::fetch_trashed_photos(&db).unwrap().is_empty());
     }
 
     #[test]

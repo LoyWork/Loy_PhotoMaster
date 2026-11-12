@@ -32,6 +32,7 @@ interface Props {
 
 interface State {
     showEmptyTrashAlert: boolean
+    emptyingTrash: boolean
 }
 
 export default class LibraryTopBar extends React.Component<Props, State> {
@@ -39,7 +40,7 @@ export default class LibraryTopBar extends React.Component<Props, State> {
     constructor(props: Props) {
         super(props)
         bindMany(this, 'onShowEmptyTrashAlert', 'onEmptyTrashCancelled', 'onEmptyTrashConfirmed')
-        this.state = { showEmptyTrashAlert: false }
+        this.state = { showEmptyTrashAlert: false, emptyingTrash: false }
     }
 
     private onShowEmptyTrashAlert() {
@@ -51,10 +52,15 @@ export default class LibraryTopBar extends React.Component<Props, State> {
     }
 
     private onEmptyTrashConfirmed() {
-        this.setState({ showEmptyTrashAlert: false })
+        if (this.state.emptyingTrash) return
+        this.setState({ showEmptyTrashAlert: false, emptyingTrash: true })
         BackgroundClient.emptyTrash()
-            .then(this.props.onPhotosTrashed)
+            .then(result => {
+                this.props.onPhotosTrashed(result)
+                if (result.failed?.length) showError(msg('LibraryTopBar_emptyTrash'), new Error(result.failed.join('\n')))
+            })
             .catch(error => showError('Trashing photos failed', error))
+            .finally(() => this.setState({ emptyingTrash: false }))
     }
 
     render() {
@@ -76,7 +82,8 @@ export default class LibraryTopBar extends React.Component<Props, State> {
                         icon="trash"
                         text={msg('LibraryTopBar_emptyTrash')}
                         intent={props.photosCount === 0 ? undefined : 'warning'}
-                        disabled={props.photosCount === 0}
+                        disabled={props.photosCount === 0 || state.emptyingTrash}
+                        loading={state.emptyingTrash}
                         onClick={this.onShowEmptyTrashAlert}
                     />
                 }
@@ -108,7 +115,7 @@ export default class LibraryTopBar extends React.Component<Props, State> {
                     icon='trash'
                     intent='danger'
                     cancelButtonText={msg('common_cancel')}
-                    confirmButtonText={msg('LibraryTopBar_moveToTrash')}
+                    confirmButtonText={msg('LibraryTopBar_emptyTrash')}
                     onCancel={this.onEmptyTrashCancelled}
                     onConfirm={this.onEmptyTrashConfirmed}
                 >

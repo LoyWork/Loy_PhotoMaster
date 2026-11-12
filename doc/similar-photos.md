@@ -29,6 +29,8 @@ The pinned ONNX export comes from `onnx-community/dinov2-small` revision `8b1f70
 
 Deletion: reuse the existing `trashed` flag, update the Redux photo data, and refresh sections/folders. Original files stay on disk until the user empties the app trash. No automatic deletion or preselected deletion.
 
+Each group header offers “Mark entire group for deletion”, including photos beyond the expanded preview. Individual checkboxes still protect the last retained photo; the explicit group action allows retaining zero. The footer confirmation moves all marked photos to the app trash. Unchecking a photo or using “Keep only this” restores a retained choice. Explicit whole-group selections survive metadata edits and partial removals without weakening protection when a retained photo is removed elsewhere.
+
 ## Verification
 
 - Rust suite: 80 tests passed including the opt-in real-model tests. Coverage includes actual migrated SQLite scans, warm-cache reuse, source-change invalidation, missing files, cancellation, trash exclusion, prevention of transitive similarity chains, independent scene retrieval across hash/aspect boundaries, and HNSW retrieval of an otherwise missed pair. Exact matching additionally covers uniform images, unreadable previews, changed files, cancellation, library IDs, and recoverable trash selection without modifying source files.

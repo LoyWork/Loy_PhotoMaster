@@ -307,6 +307,7 @@ pub struct PhotoExportOptions {
 pub struct EmptyTrashResult {
     pub photo_ids: Vec<PhotoId>,
     pub updated_tags: Option<Vec<Tag>>,
+    pub failed: Vec<String>,
 }
 
 /// Files whose complete byte content is identical. Paths, rather than photo ids, are returned so the

@@ -21,10 +21,14 @@ function reconcile(session: PhotoCleanupSession, removed: Set<PhotoId>, updates:
     }) })).filter(group => group.photos.length > 1)
     if (!changed) return session
     const selected = new Set<PhotoId>()
+    const explicitlySelected = new Set(session.result.groups
+        .filter(group => group.photos.every(item => session.selected.has(item.photo.id)))
+        .flatMap(group => group.photos.map(item => item.photo.id)))
     for (const group of groups) {
         // A retained photo may have been removed on another page. Keep the remainder
         // until the user chooses again, rather than leave an entire group selected.
-        if (group.photos.every(item => session.selected.has(item.photo.id))) continue
+        if (group.photos.every(item => session.selected.has(item.photo.id)) &&
+            !group.photos.every(item => explicitlySelected.has(item.photo.id))) continue
         for (const item of group.photos) if (session.selected.has(item.photo.id)) selected.add(item.photo.id)
     }
     return { ...session, result: { ...session.result, groups }, selected }

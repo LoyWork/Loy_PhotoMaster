@@ -58,6 +58,9 @@ export function getThumbnailSrc(photo: Photo): string {
 
 export function onPhotosTrashed(result: EmptyTrashResult) {
     store.dispatch(emptyTrashAction(result.photoIds))
+    fetchSections()
+    fetchTotalPhotoCount()
+    fetchPhotoFolders()
     if (result.updatedTags) {
         setTags(result.updatedTags)
     }

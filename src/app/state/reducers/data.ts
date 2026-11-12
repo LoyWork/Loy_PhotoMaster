@@ -185,7 +185,7 @@ const sections = (state: SectionsState = initialSectionsState, action: Action): 
                         if (prevPhoto) {
                             if (!newPhotoData || !newSection) {
                                 newPhotoData = { ...photoData }
-                                newSection = { ...section, photoData: newPhotoData }
+                                newSection = { ...section, photoIds: [...section.photoIds], photoData: newPhotoData }
                             }
                             if (removeUpdatedPhotos) {
                                 const prevPhotoIndex = newSection.photoIds.indexOf(prevPhoto.id)
@@ -218,10 +218,11 @@ const sections = (state: SectionsState = initialSectionsState, action: Action): 
                 byId: newSectionById
             }
         }
+        case EMPTY_TRASH:
         case DELETE_PHOTOS: {
             // The photos are gone from the library: remove them from the sections they appear in
             // (same walk as CHANGE_PHOTOS' trashed branch, but keyed by deleted ids).
-            const deletedIds = action.payload.photoIds
+            const deletedIds = action.type === EMPTY_TRASH ? action.payload.trashedPhotoIds : action.payload.photoIds
             const deletedSet = new Set(deletedIds)
 
             let totalPhotoCount = state.totalPhotoCount
@@ -239,14 +240,14 @@ const sections = (state: SectionsState = initialSectionsState, action: Action): 
                         if (deletedSet.has(photoId)) {
                             if (!newPhotoData || !newSection) {
                                 newPhotoData = { ...photoData }
-                                newSection = { ...section, photoData: newPhotoData }
+                                newSection = { ...section, photoIds: [...section.photoIds], photoData: newPhotoData }
                             }
                             const photoIndex = newSection.photoIds.indexOf(photoId)
                             if (photoIndex !== -1) {
                                 newSection.photoIds.splice(photoIndex, 1)
                             }
                             delete newPhotoData[photoId]
-                            if (totalPhotoCount != null) {
+                            if (totalPhotoCount != null && action.type !== EMPTY_TRASH) {
                                 totalPhotoCount--
                             }
                             newSection.count--
@@ -269,13 +270,6 @@ const sections = (state: SectionsState = initialSectionsState, action: Action): 
                 byId: newSectionById
             }
         }
-        case EMPTY_TRASH:
-            return {
-                ...state,
-                photoCount: 0,
-                ids: [],
-                byId: {}
-            }
         default:
             return state
     }

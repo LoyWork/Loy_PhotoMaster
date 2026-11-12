@@ -1,5 +1,5 @@
 import { PhotoId, PhotoSectionId } from 'app/CommonTypes'
-import { fetchSectionsAction, setLibraryActivePhotoAction, setLibraryHoverPhotoAction, setLibrarySelectionAction } from 'app/state/actions'
+import { emptyTrashAction, fetchSectionsAction, setLibraryActivePhotoAction, setLibraryHoverPhotoAction, setLibrarySelectionAction } from 'app/state/actions'
 import { library } from 'app/state/reducers/library'
 
 const sectionId = '2026-11-11' as PhotoSectionId
@@ -34,4 +34,15 @@ test('refreshing the current view keeps selection (e.g. after adding favorites)'
     const after = library(before, fetchSectionsAction.request({ newFilter: null }))
     expect(after.selection).toBe(before.selection)
     expect(after.activePhoto).toBe(before.activePhoto)
+})
+
+test('emptying trash clears deleted active and hover photos but keeps failed photos available', () => {
+    const before = selected()
+    const deleted = library(before, emptyTrashAction([photoId]))
+    expect(deleted.activePhoto).toBeNull()
+    expect(deleted.hoverPhoto).toBeNull()
+    expect(deleted.selection).toBeNull()
+    const failed = library(before, emptyTrashAction([]))
+    expect(failed.activePhoto).toBe(before.activePhoto)
+    expect(failed.hoverPhoto).toBe(before.hoverPhoto)
 })

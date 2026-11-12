@@ -8,7 +8,7 @@ import { fetchPhotoFolders, fetchSections } from 'app/controller/PhotoController
 import { msg } from 'app/i18n/i18n'
 import { changePhotosAction } from 'app/state/actions'
 import store from 'app/state/store'
-import { keepOnlySimilarPhoto, selectSimilarPhoto } from 'app/util/SimilarPhotoSelection'
+import { keepOnlySimilarPhoto, selectEntireSimilarGroup, selectSimilarPhoto } from 'app/util/SimilarPhotoSelection'
 import './SimilarPhotos.less'
 import usePhotoCleanupSession from './usePhotoCleanupSession'
 
@@ -22,15 +22,17 @@ function PhotoPreview({ item }: { item: SimilarPhoto }) {
         <img loading='lazy' src={previewSrc(item)} alt={item.photo.masterFilename} onError={() => setFailed(true)}/>
 }
 
-function PhotoGroup({ group, index, selected, disabled, visible, onMore, onToggle, onKeep, onPreview }: {
+function PhotoGroup({ group, index, selected, disabled, visible, onMore, onToggle, onKeep, onSelectAll, onPreview }: {
     group: SimilarPhotoGroup, index: number, selected: Set<PhotoId>, disabled: boolean,
     visible: number, onMore(): void,
-    onToggle(id: PhotoId): void, onKeep(id: PhotoId): void, onPreview(item: SimilarPhoto): void,
+    onToggle(id: PhotoId): void, onKeep(id: PhotoId): void, onSelectAll(): void, onPreview(item: SimilarPhoto): void,
 }) {
     const kept = group.photos.filter(item => !selected.has(item.photo.id)).length
     return <section className='SimilarPhotos-group' aria-label={msg('Similar_group', index, group.photos.length)}>
         <header><h2>{msg('Similar_group', index, group.photos.length)}</h2>
-            <span>{msg('Similar_keptCount', kept)}</span></header>
+            <span>{msg('Similar_keptCount', kept)}</span>
+            <Button small minimal icon='trash' intent='danger' disabled={disabled || kept === 0}
+                onClick={onSelectAll}>{msg('Similar_markGroupDelete')}</Button></header>
         <div className='SimilarPhotos-contactSheet'>
             {group.photos.slice(0, visible).map(item => {
                 const photo = item.photo
@@ -223,6 +225,7 @@ export default function SimilarPhotos({ kind = 'similar' }: { kind?: 'similar' |
                             [group.photos[0].photo.id]: (current[group.photos[0].photo.id] || 24) + 24 }))}
                         selected={selected} disabled={deleting} onPreview={setPreview}
                         onToggle={id => setSelected(current => selectSimilarPhoto(current, group, id))}
+                        onSelectAll={() => setSelected(current => selectEntireSimilarGroup(current, group))}
                         onKeep={id => setSelected(current => keepOnlySimilarPhoto(current, group, id))}/>
                 )}
                 {pageCount > 1 && <nav className='SimilarPhotos-pagination' aria-label={msg('Similar_pages')}>

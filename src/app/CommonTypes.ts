@@ -358,6 +358,7 @@ export interface PhotoExportProgress {
 export interface EmptyTrashResult {
     photoIds: number[]
     updatedTags?: Tag[]
+    failed?: string[]
 }
 
 export interface DeletePhotosResult {
